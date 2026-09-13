@@ -13,6 +13,7 @@ const config = {
   width: SCREEN.WIDTH,
   height: SCREEN.HEIGHT,
   backgroundColor: '#0a0e14',
+  fps: { target: 60, min: 30 },
   physics: {
     default: 'arcade',
     arcade: { gravity: { y: PHYSICS.GRAVITY_Y }, debug: false },

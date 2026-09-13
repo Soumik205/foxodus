@@ -20,6 +20,14 @@ export default class LevelScene extends Phaser.Scene {
     this.levelIndex = data?.levelIndex ?? 0;
   }
 
+  preload() {
+    const config = LEVELS[this.levelIndex];
+    // If this file doesn't exist, Phaser's loader simply won't add the texture key to the
+    // TextureManager — no crash, no error listener needed. create() below falls back to the
+    // procedural sky texture via this.textures.exists() when that's the case.
+    this.load.image(`${config.key}-bg`, `/backgrounds/${config.key}.jpg`);
+  }
+
   create() {
     // Phaser never auto-invokes a method named shutdown() — it must be bound to the scene's
     // 'shutdown' event explicitly, or it silently never runs (verified against
@@ -39,7 +47,10 @@ export default class LevelScene extends Phaser.Scene {
 
     this.physics.world.setBounds(0, 0, config.worldWidth, this.scale.height);
 
-    this.skyLayer = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, `${config.key}-sky`).setOrigin(0).setScrollFactor(0);
+    // Use the AI-generated background image if it loaded in preload(); otherwise fall back to
+    // the procedural gradient sky texture generated above — same fallback pattern as CutsceneManager.
+    const skyTextureKey = this.textures.exists(`${config.key}-bg`) ? `${config.key}-bg` : `${config.key}-sky`;
+    this.skyLayer = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, skyTextureKey).setOrigin(0).setScrollFactor(0);
     this.midLayer = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, `${config.key}-mid`).setOrigin(0).setScrollFactor(0.3);
     this.nearLayer = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, `${config.key}-near`).setOrigin(0).setScrollFactor(0.6);
 
@@ -113,5 +124,8 @@ export default class LevelScene extends Phaser.Scene {
     this.textures.remove(`${this.config.key}-sky`);
     this.textures.remove(`${this.config.key}-mid`);
     this.textures.remove(`${this.config.key}-near`);
+    // Unlike the procedural textures above, the background image texture may not exist at all
+    // if the file was missing at preload() time, so it needs a guard.
+    if (this.textures.exists(`${this.config.key}-bg`)) this.textures.remove(`${this.config.key}-bg`);
   }
 }

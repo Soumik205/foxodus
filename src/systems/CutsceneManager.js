@@ -11,9 +11,11 @@ export default class CutsceneManager {
     this._onProbeMissing = null;
     this._overlay = null;
     this._skipBtn = null;
+    this._subtitleEl = null;
+    this._subtitleHandler = null;
   }
 
-  play(slotKey, onComplete) {
+  play(slotKey, onComplete, subtitleLines = null) {
     const src = `/videos/${slotKey}.mp4`;
     const probe = document.createElement('video');
     probe.preload = 'metadata';
@@ -28,8 +30,11 @@ export default class CutsceneManager {
     };
 
     const onFound = () => {
+      // Capture duration before cleanup() runs. cleanup() doesn't actually touch it, but
+      // pulling it into a local var here keeps the intent clear at the call site below.
+      const duration = probe.duration;
       cleanup();
-      this._playOverlay(src, onComplete);
+      this._playOverlay(src, onComplete, subtitleLines, duration);
     };
 
     const onMissing = () => {
@@ -61,6 +66,10 @@ export default class CutsceneManager {
       this._onProbeMissing = null;
     }
     if (this._overlay) {
+      if (this._subtitleHandler) {
+        this._overlay.removeEventListener('timeupdate', this._subtitleHandler);
+        this._subtitleHandler = null;
+      }
       this._overlay.pause();
       this._overlay.removeAttribute('src');
       this._overlay.load();
@@ -71,9 +80,13 @@ export default class CutsceneManager {
       this._skipBtn.remove();
       this._skipBtn = null;
     }
+    if (this._subtitleEl) {
+      this._subtitleEl.remove();
+      this._subtitleEl = null;
+    }
   }
 
-  _playOverlay(src, onComplete) {
+  _playOverlay(src, onComplete, subtitleLines, duration) {
     const container = document.getElementById(this.containerId);
     const overlay = document.createElement('video');
     overlay.src = src;
@@ -100,7 +113,64 @@ export default class CutsceneManager {
     this._overlay = overlay;
     this._skipBtn = skipBtn;
 
+    // Only wire up subtitles when there's something usable to sync against — no video-less
+    // callers (or future play() call sites that don't pass lines) get a stray empty div.
+    let subtitleEl = null;
+    let subtitleHandler = null;
+    if (Array.isArray(subtitleLines) && subtitleLines.length > 0 && typeof duration === 'number' && duration > 0) {
+      subtitleEl = document.createElement('div');
+      subtitleEl.style.position = 'absolute';
+      subtitleEl.style.bottom = '64px';
+      subtitleEl.style.left = '50%';
+      subtitleEl.style.transform = 'translateX(-50%)';
+      subtitleEl.style.maxWidth = '80%';
+      subtitleEl.style.background = 'rgba(0,0,0,0.55)';
+      subtitleEl.style.color = '#ffffff';
+      subtitleEl.style.padding = '10px 18px';
+      subtitleEl.style.borderRadius = '4px';
+      subtitleEl.style.textAlign = 'center';
+      subtitleEl.style.fontFamily = 'monospace';
+      subtitleEl.style.fontSize = '16px';
+      subtitleEl.style.zIndex = '11';
+      subtitleEl.textContent = '';
+
+      // Weight each line's on-screen duration by its character length (min weight 1, so
+      // empty-string pause lines still get a sliver of time) and compute cumulative thresholds
+      // across the video's total duration.
+      const weights = subtitleLines.map((line) => line.length || 1);
+      const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+      const thresholds = [];
+      let cumulative = 0;
+      for (const w of weights) {
+        cumulative += w;
+        thresholds.push((cumulative / totalWeight) * duration);
+      }
+
+      let currentIndex = -1;
+      subtitleHandler = () => {
+        const t = overlay.currentTime;
+        let index = thresholds.findIndex((threshold) => t < threshold);
+        if (index === -1) index = subtitleLines.length - 1;
+        if (index !== currentIndex) {
+          currentIndex = index;
+          subtitleEl.textContent = subtitleLines[index];
+        }
+      };
+      overlay.addEventListener('timeupdate', subtitleHandler);
+
+      this._subtitleEl = subtitleEl;
+      this._subtitleHandler = subtitleHandler;
+    }
+
     const finish = () => {
+      if (subtitleHandler) {
+        overlay.removeEventListener('timeupdate', subtitleHandler);
+        this._subtitleHandler = null;
+      }
+      if (subtitleEl) {
+        subtitleEl.remove();
+        this._subtitleEl = null;
+      }
       overlay.pause();
       overlay.removeAttribute('src');
       overlay.load();
@@ -117,6 +187,7 @@ export default class CutsceneManager {
 
     container.appendChild(overlay);
     container.appendChild(skipBtn);
+    if (subtitleEl) container.appendChild(subtitleEl);
     overlay.play().catch(finish);
   }
 }

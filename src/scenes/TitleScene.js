@@ -2,7 +2,7 @@
 import Phaser from 'phaser';
 import CutsceneManager from '../systems/CutsceneManager.js';
 
-const LORE_TEXT = [
+const LORE_LINES = [
   '2079. Artificial intelligence took over.',
   'The cities became silent. The people became something else —',
   'slow, mindless, wandering shells patrolled by machines',
@@ -14,7 +14,9 @@ const LORE_TEXT = [
   'He doesn’t want to save the world.',
   'He just wants to get back to the forest —',
   'and he’s not above stealing a chicken or twelve on the way.',
-].join('\n');
+];
+
+const LORE_TEXT = LORE_LINES.join('\n');
 
 export default class TitleScene extends Phaser.Scene {
   constructor() {
@@ -26,7 +28,7 @@ export default class TitleScene extends Phaser.Scene {
 
     this.cutsceneManager = new CutsceneManager();
     this._showFallback();
-    this.cutsceneManager.play('intro', () => {}); // if a real clip exists it overlays on top; fallback text underneath either way
+    this.cutsceneManager.play('intro', () => {}, LORE_LINES); // if a real clip exists it overlays on top with timed subtitles; fallback text underneath either way
   }
 
   _showFallback() {

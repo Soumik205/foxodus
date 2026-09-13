@@ -13,8 +13,10 @@ export const LEVELS = [
       { x: 1500, y: 380 }, { x: 1900, y: 400 }, { x: 2300, y: 380 },
     ],
     enemies: [
+      { type: 'zombie', x: 450, rangeStart: 420, rangeEnd: 600 },
       { type: 'zombie', x: 900, rangeStart: 850, rangeEnd: 1050 },
       { type: 'zombie', x: 1800, rangeStart: 1750, rangeEnd: 1950 },
+      { type: 'zombie', x: 2450, rangeStart: 2420, rangeEnd: 2600 },
     ],
   },
 ];

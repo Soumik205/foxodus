@@ -18,6 +18,6 @@ export const HEALTH = {
 };
 
 export const SCREEN = {
-  WIDTH: 960,
-  HEIGHT: 540,
+  WIDTH: 1280,
+  HEIGHT: 720,
 };

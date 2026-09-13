@@ -1,0 +1,23 @@
+// src/config/constants.js
+export const PHYSICS = {
+  GRAVITY_Y: 1400,
+  MOVE_SPEED: 220,
+  JUMP_VELOCITY: -520,
+  DASH_SPEED: 650,
+  DASH_DURATION_MS: 220,
+  DASH_COOLDOWN_MS: 900,
+  DASH_IFRAME_MS: 250,
+};
+
+export const HEALTH = {
+  MAX: 100,
+  DRAIN_PER_SEC: 1.2,
+  CHICKEN_HEAL: 18,
+  ENEMY_DAMAGE: 30,
+  POST_HIT_INVULN_MS: 800,
+};
+
+export const SCREEN = {
+  WIDTH: 960,
+  HEIGHT: 540,
+};

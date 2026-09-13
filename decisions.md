@@ -1,5 +1,28 @@
 # Decisions Log
 
+## 2026-09-13 — CSP blocked background images; fixed by adding blob: to img-src
+
+**Decision:** Added `blob:` to the CSP `img-src` directive in `index.html`
+(`img-src 'self' data: blob:;`).
+
+**Why:** Background images (`public/backgrounds/*.jpg`) appeared to fail to load — Phaser logged
+"Failed to process file" for every one. This looked like an image-format problem (the generated
+JPEGs were 3168×1344 with unusual metadata) but wasn't: the same file decoded fine via a direct
+`createImageBitmap()` test. The real cause is Phaser's own image loader internally creates a
+`blob:` object URL (`URL.createObjectURL()` on the XHR-fetched blob) and assigns it to an
+`<img>` element to decode — our CSP's `img-src` only allowed `'self'` and `data:`, so the browser
+silently blocked the blob: URL, firing the image's `onerror`, which Phaser reports as a generic
+processing failure with no CSP-violation message in the console to point at the real cause.
+
+**How to apply:** Any future asset loaded through Phaser's `this.load.image()` will hit this same
+wall if `blob:` isn't in `img-src`. This is now fixed project-wide. If a *new* CSP-restricted
+resource type mysteriously fails to load only through Phaser's loader (not via direct `fetch`/
+`<img>` tests), suspect the same blob: URL pattern first.
+
+**Also (minor, not the actual fix):** re-encoded the 5 background images to clean 1280×720
+JPEGs via `sips` (were 3168×1344, ~2.5MB each) — smaller and matches the requested export spec,
+done in case it was a contributing factor before the CSP root cause was found. Harmless either way.
+
 ## 2026-09-13 — User feedback round 1: resolution/HUD, difficulty, backgrounds, subtitles
 
 **Decision:** Implemented four user-requested changes to the shipped Milestone 1-4 build:

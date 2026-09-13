@@ -1283,6 +1283,12 @@ export default class LevelScene extends Phaser.Scene {
   }
 
   create() {
+    // Phaser never auto-invokes a method named shutdown() — it must be bound to the scene's
+    // 'shutdown' event explicitly, or it silently never runs (verified against
+    // node_modules/phaser/src/scene/SceneManager.js: only init/preload/create/update are
+    // framework-invoked by name). This wiring is required for the cleanup below to fire at all.
+    this.events.once('shutdown', this.shutdown, this);
+
     const config = LEVELS[this.levelIndex];
     this.config = config;
 
@@ -1389,6 +1395,8 @@ export default class UIScene extends Phaser.Scene {
   }
 
   create() {
+    this.events.once('shutdown', this.shutdown, this); // see LevelScene.create() for why this is required
+
     this.healthBarBg = this.add.rectangle(20, 20, 200, 18, 0x1a1f2b).setOrigin(0, 0.5);
     this.healthBarFill = this.add.rectangle(22, 20, 196, 14, 0xe8622c).setOrigin(0, 0.5);
     this.dashPip = this.add.circle(20, 46, 8, 0x4fa8e8).setOrigin(0.5);
@@ -1438,6 +1446,8 @@ export default class TitleScene extends Phaser.Scene {
   }
 
   create() {
+    this.events.once('shutdown', this.shutdown, this); // see LevelScene.create() for why this is required
+
     this.cutsceneManager = new CutsceneManager();
     this._showFallback();
     this.cutsceneManager.play('intro', () => {}); // if a real clip exists it overlays on top; fallback text underneath either way

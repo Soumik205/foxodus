@@ -100,7 +100,7 @@ export default class Fox extends Phaser.Physics.Arcade.Sprite {
     this._dashTimerMs = PHYSICS.DASH_DURATION_MS;
     this._dashCooldownMs = PHYSICS.DASH_COOLDOWN_MS;
     this.isInvulnerable = true;
-    this._invulnTimerMs = PHYSICS.DASH_IFRAME_MS;
+    this._invulnTimerMs = Math.max(this._invulnTimerMs, PHYSICS.DASH_IFRAME_MS);
     this.body.setVelocityX(PHYSICS.DASH_SPEED * this._facing);
   }
 }

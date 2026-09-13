@@ -23,7 +23,6 @@ export function generateParallaxTextures(scene, key, palette) {
 function drawGradientLayer(g, width, height, colorTop, colorBottom) {
   const steps = 20;
   for (let i = 0; i < steps; i += 1) {
-    const t = i / (steps - 1);
     const color = Phaser.Display.Color.Interpolate.ColorWithColor(
       Phaser.Display.Color.ValueToColor(colorTop),
       Phaser.Display.Color.ValueToColor(colorBottom),

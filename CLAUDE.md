@@ -33,9 +33,9 @@ This project is being built under a ~3-hour time budget via subagent-driven deve
 If you're a different AI session/tool picking this up:
 
 - **Plan file:** `docs/superpowers/plans/2026-09-13-foxodus-core-slice.md` — covers Milestones
-  1–4 in full task-by-task detail (exact code, file lists, verification steps). Read this before
-  writing any new code for Milestone 4 — it's already fully specified, including fixes made
-  during review (texture-cleanup guards, Phaser `shutdown()` event wiring — see below).
+  1–4 in full task-by-task detail (exact code, file lists, verification steps), all implemented.
+  Read it for context on decisions already made (texture-cleanup guards, Phaser `shutdown()`
+  event wiring — see below), and as the template for Plan B's (Milestones 5–8) structure.
 - **Design spec:** `docs/superpowers/specs/2026-09-13-foxodus-design.md` — audio/cutscene
   architecture and delivery process, additive to `README.md`.
 - **Decision history:** `decisions.md` — read this for *why*, especially the entries on Phaser's
@@ -55,6 +55,11 @@ If you're a different AI session/tool picking this up:
   fragile for future pooled types); pool-exhaustion fallback spawns skip the ground collider
   (never triggered by any current level config). Both are documented, low-risk, and intentionally
   deferred to Plan B (Milestones 5–8, not yet planned as of this writing).
+- **Fixed this session:** a final whole-branch review found `CutsceneManager` had no cancel/
+  teardown path — clicking Start on `TitleScene` before the intro clip's `loadedmetadata` probe
+  resolved could leave a full-screen video overlay appended on top of the already-running
+  `LevelScene`. Added `CutsceneManager.cancel()` (tears down the in-flight probe or playing
+  overlay without invoking `onComplete`) and wired it into `TitleScene.shutdown()`.
 - **Gotcha for anyone testing in a headless/automated browser tab:** if `document.visibilityState`
   is `"hidden"` (common in browser-automation tooling), Chrome throttles `requestAnimationFrame`
   to near-zero and Phaser's game loop won't advance on its own. Work around it by temporarily
@@ -92,6 +97,7 @@ npm test         # Vitest — pure-logic unit tests only (HealthSystem, InputCon
 /public
   videos/        Sora-generated cutscene clips (late-bound, optional per slot) — not created
                  yet, prompts are in docs/cutscene-prompts.md
+/tests           HealthSystem.test.js, InputController.test.js — Vitest, pure-logic only
 ```
 
 Key architectural rules to preserve (see README §8–10 for full detail):

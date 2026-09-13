@@ -5,6 +5,12 @@
 export default class CutsceneManager {
   constructor(containerId = 'game-container') {
     this.containerId = containerId;
+    // Handles to whichever async step is currently in flight, so cancel() can tear it down.
+    this._probe = null;
+    this._onProbeFound = null;
+    this._onProbeMissing = null;
+    this._overlay = null;
+    this._skipBtn = null;
   }
 
   play(slotKey, onComplete) {
@@ -16,6 +22,9 @@ export default class CutsceneManager {
       probe.removeEventListener('loadedmetadata', onFound);
       probe.removeEventListener('error', onMissing);
       probe.src = '';
+      this._probe = null;
+      this._onProbeFound = null;
+      this._onProbeMissing = null;
     };
 
     const onFound = () => {
@@ -28,9 +37,40 @@ export default class CutsceneManager {
       onComplete();
     };
 
+    this._probe = probe;
+    this._onProbeFound = onFound;
+    this._onProbeMissing = onMissing;
+
     probe.addEventListener('loadedmetadata', onFound, { once: true });
     probe.addEventListener('error', onMissing, { once: true });
     probe.src = src;
+  }
+
+  // Tears down whichever of the in-flight metadata probe or the playing overlay is currently
+  // active, WITHOUT calling onComplete — used when the owning scene is shutting down and nothing
+  // should act on completion (see TitleScene.shutdown()).
+  cancel() {
+    if (this._probe) {
+      // Remove listeners before clearing src, same order as cleanup() above — otherwise
+      // clearing src can fire the 'error' listener and incorrectly trigger onComplete.
+      this._probe.removeEventListener('loadedmetadata', this._onProbeFound);
+      this._probe.removeEventListener('error', this._onProbeMissing);
+      this._probe.src = '';
+      this._probe = null;
+      this._onProbeFound = null;
+      this._onProbeMissing = null;
+    }
+    if (this._overlay) {
+      this._overlay.pause();
+      this._overlay.removeAttribute('src');
+      this._overlay.load();
+      this._overlay.remove();
+      this._overlay = null;
+    }
+    if (this._skipBtn) {
+      this._skipBtn.remove();
+      this._skipBtn = null;
+    }
   }
 
   _playOverlay(src, onComplete) {
@@ -57,12 +97,17 @@ export default class CutsceneManager {
     skipBtn.style.padding = '8px 14px';
     skipBtn.style.cursor = 'pointer';
 
+    this._overlay = overlay;
+    this._skipBtn = skipBtn;
+
     const finish = () => {
       overlay.pause();
       overlay.removeAttribute('src');
       overlay.load();
       overlay.remove();
       skipBtn.remove();
+      this._overlay = null;
+      this._skipBtn = null;
       onComplete();
     };
 

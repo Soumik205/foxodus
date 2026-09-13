@@ -58,6 +58,7 @@ export default class TitleScene extends Phaser.Scene {
   }
 
   shutdown() {
+    this.cutsceneManager.cancel();
     this.time.removeAllEvents();
     this.tweens.killAll();
   }

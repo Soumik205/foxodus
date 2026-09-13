@@ -2,11 +2,7 @@
   "type": "module",
   "name": "foxodus",
   "version": "1.0.0",
-  "description": "**Tagline:** *One fox. A pocketful of stolen chickens. A world that forgot how to be alive.*",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "description": "A 2D parallax platformer where a fox runs, jumps, and dashes through an AI-ruled dystopia back to the forest, eating stolen chickens along the way.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -17,10 +13,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "phaser": "^3.90.0"
+    "phaser": "3.90.0"
   },
   "devDependencies": {
-    "vite": "^5.4.21",
-    "vitest": "^2.1.9"
+    "vite": "5.4.21",
+    "vitest": "2.1.9"
   }
 }

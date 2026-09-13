@@ -103,7 +103,11 @@ export default class LevelScene extends Phaser.Scene {
     if (this.fox.x >= this.config.levelEndX) {
       this._levelEnded = true;
       this.scene.stop('UIScene');
-      this.scene.start('WinScene');
+      if (this.levelIndex + 1 < LEVELS.length) {
+        this.scene.start('LevelScene', { levelIndex: this.levelIndex + 1 });
+      } else {
+        this.scene.start('WinScene');
+      }
       return;
     }
 

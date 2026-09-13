@@ -7,11 +7,11 @@ export default class WinScene extends Phaser.Scene {
   }
 
   create() {
-    this.add.text(this.scale.width / 2, this.scale.height / 2 - 20, 'Level Complete!', {
+    this.add.text(this.scale.width / 2, this.scale.height / 2 - 20, 'Home.', {
       fontFamily: 'monospace', fontSize: '32px', color: '#8fe86c',
     }).setOrigin(0.5);
 
-    this.add.text(this.scale.width / 2, this.scale.height / 2 + 30, '(More levels coming in Plan B)', {
+    this.add.text(this.scale.width / 2, this.scale.height / 2 + 30, 'The fox made it back to the forest.', {
       fontFamily: 'monospace', fontSize: '16px', color: '#e8dfce',
     }).setOrigin(0.5);
 

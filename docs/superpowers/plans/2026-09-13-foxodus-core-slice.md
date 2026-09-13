@@ -1295,7 +1295,7 @@ export default class LevelScene extends Phaser.Scene {
     // Character textures are identical across every level/restart — generate once, keep cached.
     // Per-level parallax textures ARE removed in shutdown() below, so always regenerate them.
     if (!this.textures.exists('fox-idle')) generateFoxTextures(this);
-    if (!this.textures.exists('chicken')) generateChickenTexture(this);
+    if (!this.textures.exists('chicken-wing-up')) generateChickenTexture(this);
     if (!this.textures.exists('zombie')) generateZombieTexture(this);
     generateParallaxTextures(this, config.key, config.palette);
 

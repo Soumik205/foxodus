@@ -10,6 +10,7 @@ import Fox from '../entities/Fox.js';
 import Chicken from '../entities/Chicken.js';
 import ZombiePatrol from '../entities/ZombiePatrol.js';
 import CutsceneManager from '../systems/CutsceneManager.js';
+import audioManager from '../systems/AudioManager.js';
 import { LEVELS } from '../config/levels.js';
 
 export default class LevelScene extends Phaser.Scene {
@@ -81,6 +82,7 @@ export default class LevelScene extends Phaser.Scene {
 
     this.physics.add.overlap(this.fox, this.chickenPool.getChildren(), (fox, chicken) => {
       fox.pickupChicken(chicken.healAmount);
+      audioManager.playChickenPickup();
       chicken.onDespawn();
       this.chickenPool.despawn(chicken);
     });
@@ -103,6 +105,9 @@ export default class LevelScene extends Phaser.Scene {
     this.cutsceneManager = new CutsceneManager();
     this.cutsceneManager.play(config.cutsceneKey, () => {
       this._introPlaying = false;
+      // Start gameplay music only once the intro cutscene finishes, so a video's own embedded
+      // audio isn't competing with procedural music at the same time.
+      audioManager.playLevelMusic(this.levelIndex);
     });
   }
 
@@ -113,6 +118,8 @@ export default class LevelScene extends Phaser.Scene {
     if (this.fox.health.isDead) {
       this._levelEnded = true;
       this.scene.stop('UIScene');
+      audioManager.stopMusic();
+      audioManager.playGameOver();
       this.scene.start('GameOverScene', { levelIndex: this.levelIndex });
       return;
     }
@@ -120,9 +127,11 @@ export default class LevelScene extends Phaser.Scene {
     if (this.fox.x >= this.config.levelEndX) {
       this._levelEnded = true;
       this.scene.stop('UIScene');
+      audioManager.playLevelComplete();
       if (this.levelIndex + 1 < LEVELS.length) {
         this.scene.start('LevelScene', { levelIndex: this.levelIndex + 1 });
       } else {
+        audioManager.stopMusic();
         this.scene.start('WinScene');
       }
       return;

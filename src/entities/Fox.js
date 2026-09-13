@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { PHYSICS, HEALTH } from '../config/constants.js';
 import HealthSystem from '../systems/HealthSystem.js';
+import audioManager from '../systems/AudioManager.js';
 
 export default class Fox extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
@@ -56,6 +57,7 @@ export default class Fox extends Phaser.Physics.Arcade.Sprite {
 
     if (inputState.jumpPressed && this.body.blocked.down) {
       this.body.setVelocityY(PHYSICS.JUMP_VELOCITY);
+      audioManager.playJump();
     }
 
     if (!this.body.blocked.down) {
@@ -73,6 +75,7 @@ export default class Fox extends Phaser.Physics.Arcade.Sprite {
     this.isInvulnerable = true;
     this._invulnTimerMs = HEALTH.POST_HIT_INVULN_MS;
     this._playHitFeedback();
+    audioManager.playHit();
   }
 
   _playHitFeedback() {
@@ -102,5 +105,6 @@ export default class Fox extends Phaser.Physics.Arcade.Sprite {
     this.isInvulnerable = true;
     this._invulnTimerMs = Math.max(this._invulnTimerMs, PHYSICS.DASH_IFRAME_MS);
     this.body.setVelocityX(PHYSICS.DASH_SPEED * this._facing);
+    audioManager.playDash();
   }
 }

@@ -1,6 +1,7 @@
 // src/scenes/TitleScene.js
 import Phaser from 'phaser';
 import CutsceneManager from '../systems/CutsceneManager.js';
+import audioManager from '../systems/AudioManager.js';
 
 const LORE_LINES = [
   '2079. Artificial intelligence took over.',
@@ -55,6 +56,9 @@ export default class TitleScene extends Phaser.Scene {
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     startBtn.once('pointerdown', () => {
+      // Browser autoplay policy requires the AudioContext to be created/resumed from inside a
+      // user-gesture handler — this click is the first (and every) such gesture we get.
+      audioManager.init();
       this.scene.start('LevelScene', { levelIndex: 0 });
     });
   }

@@ -1,5 +1,33 @@
 # Decisions Log
 
+## 2026-09-13 — Audio: fully procedural (music included), sequential fades, unmuted cutscenes
+
+**Decision:** All SFX and music are generated in code via the Web Audio API (`AudioManager.js`,
+a module singleton) — no imported audio files at all, including background music. This updates
+the earlier brainstorming-phase decision ("procedural SFX + curated CC0 music") — the user's
+later direct instruction ("during gameplay, generate audio yourself") superseded it in favor of
+fully procedural, avoiding the need to source/license external music tracks under time pressure.
+
+**Music crossfade is sequential (fade-out, then fade-in), not a true overlapping crossfade.**
+Two separate always-alive gain buses would have been more faithful to README §6's "crossfade
+between level tracks," but added meaningful complexity (bus bookkeeping, node-lifetime tracking
+across two buses) for a difference that's barely audible over a ~1.2s transition. Chosen for
+reliability under time pressure — revisit only if the brief silence between levels is
+noticeably distracting.
+
+**Cutscene videos are unmuted so their own embedded audio plays** (`CutsceneManager.js`), with a
+try-unmuted-first, fall-back-to-muted-on-rejection pattern — browsers block unmuted autoplay
+without a prior user gesture, which is exactly the situation for the very first cutscene
+(Title's intro, playing before any click has happened). Procedural gameplay music is
+deliberately NOT started until a level's intro cutscene finishes, so the video's audio and the
+generated music are never fighting for the same moment.
+
+**AudioContext creation is gated behind the Title screen's Start button click** (the browser
+autoplay policy requires a user gesture) — `AudioManager.init()` is called there, not at module
+load or game boot.
+
+---
+
 ## 2026-09-13 — CSP blocked background images; fixed by adding blob: to img-src
 
 **Decision:** Added `blob:` to the CSP `img-src` directive in `index.html`

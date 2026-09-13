@@ -24,9 +24,17 @@ Tracked here as each milestone completes. See `TODO` list in-session for live gr
 - [x] Feedback round 1 (post-Milestone-4): 1280×720 resolution + HUD rescale + explicit 60fps
       config; 4 zombies in Level 1 (was 2); background-image pipeline (external AI images,
       procedural fallback — see `decisions.md`); synced subtitles for the intro cutscene
-- [ ] Milestone 5 — Levels 2–5 via config ← **next up**
-- [ ] Milestone 6 — Audio arc + SFX
-- [ ] Milestone 7 — Mobile touch controls
+- [x] Feedback round 2: fixed CSP blocking background images (blob: missing from img-src),
+      recalibrated chicken heights (empirically, not just formula), removed procedural
+      silhouette "boxes" when a real background image is present, wired levels.js LEVELS[1..4]
+      (Milestones 5's config work, done ad hoc — not yet playtested as thoroughly as Level 1),
+      wired per-level intro cutscenes into LevelScene (were configured but never played)
+- [x] Milestone 6 — Audio: procedural SFX (jump/dash/pickup/hit/level-complete/game-over) via
+      Web Audio API in `AudioManager.js`; generative ambient music per level that fades between
+      levels (sequential fade-out/fade-in, not a true overlapping crossfade — see decisions.md);
+      cutscene videos unmuted so their own embedded audio plays, with a muted-autoplay fallback
+      if the browser blocks unmuted playback before a user gesture
+- [ ] Milestone 7 — Mobile touch controls ← **next up**
 - [ ] Milestone 8 — Buffer / bug triage / final polish
 
 ## Handoff / continuity (read this first if picking up mid-session)
@@ -94,11 +102,11 @@ npm test         # Vitest — pure-logic unit tests only (HealthSystem, InputCon
 /src
   /scenes        BootScene, TitleScene, LevelScene, UIScene, GameOverScene, WinScene (built)
   /entities      Fox, Chicken, Enemy (base), ZombiePatrol (built) — Turret is stretch-only
-  /systems       InputController, HealthSystem, ObjectPool, CutsceneManager (built) —
-                 AudioManager, SaveManager (later milestones, planned)
+  /systems       InputController, HealthSystem, ObjectPool, CutsceneManager, AudioManager
+                 (built) — SaveManager (stretch goal, not planned unless time allows)
   /graphics      FoxGraphics, BackgroundLayers, ChickenGraphics, EnemyGraphics (built)
-  /config        constants.js, levels.js (built) — LEVELS[0] populated, [1..4] planned for
-                 Milestone 5
+  /config        constants.js, levels.js (built) — all 5 LEVELS populated, but only Level 1 is
+                 well-playtested; 2-5 need a playthrough pass
   main.js
 /public
   videos/        Sora-generated cutscene clips (late-bound, optional per slot) — not created

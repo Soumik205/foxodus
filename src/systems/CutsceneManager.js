@@ -90,7 +90,7 @@ export default class CutsceneManager {
     const container = document.getElementById(this.containerId);
     const overlay = document.createElement('video');
     overlay.src = src;
-    overlay.muted = true;
+    overlay.muted = false; // let the clip's own embedded audio play — see the fallback below
     overlay.playsInline = true;
     overlay.autoplay = true;
     overlay.style.position = 'absolute';
@@ -188,6 +188,13 @@ export default class CutsceneManager {
     container.appendChild(overlay);
     container.appendChild(skipBtn);
     if (subtitleEl) container.appendChild(subtitleEl);
-    overlay.play().catch(finish);
+    // Browsers block unmuted autoplay without a preceding user gesture (this fires on plain
+    // scene entry, e.g. TitleScene's very first load, before any click has happened yet). If
+    // unmuted playback is rejected, retry muted rather than skipping the clip outright — seeing
+    // it silently is still better than not seeing it at all.
+    overlay.play().catch(() => {
+      overlay.muted = true;
+      overlay.play().catch(finish);
+    });
   }
 }

@@ -48,11 +48,17 @@ export default class LevelScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, config.worldWidth, this.scale.height);
 
     // Use the AI-generated background image if it loaded in preload(); otherwise fall back to
-    // the procedural gradient sky texture generated above — same fallback pattern as CutsceneManager.
-    const skyTextureKey = this.textures.exists(`${config.key}-bg`) ? `${config.key}-bg` : `${config.key}-sky`;
+    // the procedural gradient sky + silhouette layers — same fallback pattern as CutsceneManager.
+    // The procedural silhouette layers are ONLY shown as a depth substitute when there's no real
+    // background image — with a real painted background, they just read as ugly flat boxes on
+    // top of it, so they're skipped entirely once an image exists.
+    this._hasRealBg = this.textures.exists(`${config.key}-bg`);
+    const skyTextureKey = this._hasRealBg ? `${config.key}-bg` : `${config.key}-sky`;
     this.skyLayer = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, skyTextureKey).setOrigin(0).setScrollFactor(0);
-    this.midLayer = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, `${config.key}-mid`).setOrigin(0).setScrollFactor(0.3);
-    this.nearLayer = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, `${config.key}-near`).setOrigin(0).setScrollFactor(0.6);
+    if (!this._hasRealBg) {
+      this.midLayer = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, `${config.key}-mid`).setOrigin(0).setScrollFactor(0.3);
+      this.nearLayer = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, `${config.key}-near`).setOrigin(0).setScrollFactor(0.6);
+    }
 
     const ground = this.add.rectangle(config.worldWidth / 2, this.scale.height - 20, config.worldWidth, 40, 0x1a1f2b);
     this.physics.add.existing(ground, true);
@@ -114,8 +120,8 @@ export default class LevelScene extends Phaser.Scene {
     const inputState = this.input_.getState();
     this.fox.handleInput(inputState, delta);
 
-    this.midLayer.tilePositionX = this.cameras.main.scrollX * 0.3;
-    this.nearLayer.tilePositionX = this.cameras.main.scrollX * 0.6;
+    if (this.midLayer) this.midLayer.tilePositionX = this.cameras.main.scrollX * 0.3;
+    if (this.nearLayer) this.nearLayer.tilePositionX = this.cameras.main.scrollX * 0.6;
   }
 
   shutdown() {

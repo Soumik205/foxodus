@@ -1,5 +1,53 @@
 # Decisions Log
 
+## 2026-09-13 — Plan A (Milestones 1-4, "core slice") complete — deferred items for Plan B
+
+**Decision:** The core-slice plan is done: all 4 tasks implemented, individually code-reviewed,
+plus a final whole-branch review (opus) and one fix wave for its findings, all re-reviewed clean.
+`npm test` (9/9) and `npm run build` both green. The full title→play→win/lose→retry loop is
+live-verified end to end with zero console errors, including across scene restarts.
+
+**Why documented here (not just in the SDD ledger):** the per-task ledger at
+`.superpowers/sdd/2026-09-13-foxodus-core-slice/progress.md` is git-ignored scratch space and may
+be deleted once its plan is finished, per the subagent-driven-development skill's own convention
+("the git history is the record now"). But this project's continuity requirement (a different AI
+tool may need to pick this up) means the *reasoning*, not just the code, needs to survive in a
+tracked file. This entry is that migration for the items intentionally deferred rather than fixed.
+
+**Deferred to Plan B (Milestones 5-8) — all confirmed low-risk on independent review, not bugs:**
+- `ObjectPool.despawn()` doesn't auto-call `instance.onDespawn()` (asymmetric with `spawn()`,
+  which does auto-call `onSpawn()`). Fine today (`LevelScene.js`'s one call site does the manual
+  sequence correctly); fix when Plan B adds a second pooled-and-despawned type (e.g. particles).
+- `ObjectPool`'s pool-exhaustion fallback path skips the ground collider and doesn't forward
+  constructor args. Structurally unreachable today (every pool's `initialSize` exactly matches
+  its spawn count). Cheap improvement identified for Plan B: pass `this.enemyPool.group` /
+  `this.chickenPool.group` directly to `physics.add.collider`/`overlap` instead of per-instance
+  colliders or `getChildren()` arrays — closes this gap for free and is also cleaner.
+- `config/levels.js`'s `enemies[].type` field is unread — `LevelScene` unconditionally
+  instantiates `ZombiePatrol`. Intentional: README §7 names a concrete future consumer (a
+  stationary turret, Level 4+). Wire a type→class lookup when that lands.
+- Minor code-quality notes from the final review, all low-risk: `InputController.js`'s comment
+  about touch-input "self-consuming" is inaccurate (describes intended behavior not yet
+  implemented — `getState()` never clears `_touch`; relevant when Milestone 7 wires the real
+  touch overlay, fix then); a couple of test names/assertions in `tests/` are slightly loose
+  (don't fully verify what their names claim) without being wrong; the duplicated
+  `isInvulnerable` guard exists in both the `LevelScene.js` overlap callback and
+  `Fox.takeHit()` (harmless, just redundant); menu buttons (Start/Retry/Back-to-Title) are
+  pointer-only with no keyboard alternative (minor friction, not a blocker).
+- Balance tuning flagged for Milestone 8's polish pass, not before: `HEALTH.DRAIN_PER_SEC: 1.2`
+  against `HEALTH.MAX: 100` gives ~83s to die from drain alone, while Level 1's 3000px width
+  takes ~14s to traverse at `PHYSICS.MOVE_SPEED: 220` — drain is currently near-decorative.
+  Revisit once all 5 levels exist and real session length is known, not per-level.
+- Process recommendation (optional): a dev-only ESLint pass would catch the class of
+  already-found dead-code findings (unused vars/exports) without needing a human reviewer for it.
+
+**How to apply:** Plan B's brainstorming/planning pass should read this list before designing
+Milestones 5-8's task breakdown — several items (the pooling collider consolidation, the enemy
+`type` field) are cheapest to address exactly when Plan B's own work already touches those files,
+rather than as separate cleanup tasks.
+
+---
+
 Dated record of every non-obvious decision made during development, with reasoning.
 Newest entries at the top. Cross-reference the design spec at
 `docs/superpowers/specs/2026-09-13-foxodus-design.md` for the full picture.

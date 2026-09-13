@@ -7,12 +7,15 @@
 // AudioContext creation must happen inside a user-gesture handler (browser autoplay policy) —
 // call init() from the Title screen's Start button click, not at module load time.
 
+// Base frequencies kept out of the deep sub-bass register (roughly 90-140Hz, not 50-75Hz) —
+// the original values sat low enough to feel physically uncomfortable at any real volume,
+// independent of gain. Mood differences still come through via filterFreq/waveform/detune.
 const LEVEL_MUSIC_PROFILES = [
-  { baseFreq: 55, filterFreq: 900, detune: 12, tempo: 0.55, waveform: 'sawtooth' }, // industrial
-  { baseFreq: 58, filterFreq: 1100, detune: 9, tempo: 0.5, waveform: 'sawtooth' },
-  { baseFreq: 65, filterFreq: 1400, detune: 6, tempo: 0.45, waveform: 'triangle' },
-  { baseFreq: 50, filterFreq: 700, detune: 15, tempo: 0.6, waveform: 'sawtooth' }, // darkest/tense
-  { baseFreq: 73, filterFreq: 2000, detune: 2, tempo: 0.35, waveform: 'sine' }, // calm/acoustic-ish
+  { baseFreq: 92, filterFreq: 800, detune: 8, tempo: 0.55, waveform: 'sawtooth' }, // industrial
+  { baseFreq: 96, filterFreq: 950, detune: 6, tempo: 0.5, waveform: 'sawtooth' },
+  { baseFreq: 104, filterFreq: 1200, detune: 4, tempo: 0.45, waveform: 'triangle' },
+  { baseFreq: 84, filterFreq: 650, detune: 10, tempo: 0.6, waveform: 'triangle' }, // darkest/tense
+  { baseFreq: 130, filterFreq: 1800, detune: 2, tempo: 0.35, waveform: 'sine' }, // calm/acoustic-ish
 ];
 
 class AudioManager {
@@ -29,8 +32,14 @@ class AudioManager {
     const Ctx = window.AudioContext || window.webkitAudioContext;
     this.ctx = new Ctx();
     this.masterGain = this.ctx.createGain();
-    this.masterGain.gain.value = 0.6;
-    this.masterGain.connect(this.ctx.destination);
+    this.masterGain.gain.value = 0.32; // was 0.6 — too loud overall
+    // Cuts uncomfortable sub-bass rumble (below ~engine-hum territory) from every sound —
+    // SFX and music alike — without noticeably changing their pitch/character.
+    this.masterHighpass = this.ctx.createBiquadFilter();
+    this.masterHighpass.type = 'highpass';
+    this.masterHighpass.frequency.value = 100;
+    this.masterGain.connect(this.masterHighpass);
+    this.masterHighpass.connect(this.ctx.destination);
     this.musicGain = this.ctx.createGain();
     this.musicGain.gain.value = 0;
     this.musicGain.connect(this.masterGain);
@@ -51,7 +60,7 @@ class AudioManager {
     osc.type = 'square';
     osc.frequency.setValueAtTime(280, t);
     osc.frequency.exponentialRampToValueAtTime(520, t + 0.12);
-    gain.gain.setValueAtTime(0.18, t);
+    gain.gain.setValueAtTime(0.14, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
     osc.connect(gain).connect(this.masterGain);
     osc.start(t);
@@ -67,7 +76,7 @@ class AudioManager {
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(700, t);
     osc.frequency.exponentialRampToValueAtTime(120, t + 0.2);
-    gain.gain.setValueAtTime(0.16, t);
+    gain.gain.setValueAtTime(0.12, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
     osc.connect(gain).connect(this.masterGain);
     osc.start(t);
@@ -86,7 +95,7 @@ class AudioManager {
       osc.type = 'square';
       osc.frequency.setValueAtTime(freq, start);
       gain.gain.setValueAtTime(0.001, start);
-      gain.gain.linearRampToValueAtTime(0.2, start + 0.02);
+      gain.gain.linearRampToValueAtTime(0.15, start + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15);
       osc.connect(gain).connect(this.masterGain);
       osc.start(start);
@@ -105,17 +114,19 @@ class AudioManager {
     const noise = this.ctx.createBufferSource();
     noise.buffer = buffer;
     const noiseGain = this.ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.25, t);
+    noiseGain.gain.setValueAtTime(0.15, t);
     noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
     noise.connect(noiseGain).connect(this.masterGain);
     noise.start(t);
 
+    // Thud kept above the deepest sub-bass (was 140->50Hz) — still reads as an impact without
+    // the physically uncomfortable low end.
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(140, t);
-    osc.frequency.exponentialRampToValueAtTime(50, t + 0.2);
-    gain.gain.setValueAtTime(0.3, t);
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.exponentialRampToValueAtTime(90, t + 0.2);
+    gain.gain.setValueAtTime(0.18, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
     osc.connect(gain).connect(this.masterGain);
     osc.start(t);
@@ -133,7 +144,7 @@ class AudioManager {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, start);
       gain.gain.setValueAtTime(0.001, start);
-      gain.gain.linearRampToValueAtTime(0.22, start + 0.02);
+      gain.gain.linearRampToValueAtTime(0.16, start + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
       osc.connect(gain).connect(this.masterGain);
       osc.start(start);
@@ -152,7 +163,7 @@ class AudioManager {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(freq, start);
       gain.gain.setValueAtTime(0.001, start);
-      gain.gain.linearRampToValueAtTime(0.2, start + 0.02);
+      gain.gain.linearRampToValueAtTime(0.15, start + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
       osc.connect(gain).connect(this.masterGain);
       osc.start(start);
@@ -194,7 +205,9 @@ class AudioManager {
     const t = this.ctx.currentTime;
     this.musicGain.gain.cancelScheduledValues(t);
     this.musicGain.gain.setValueAtTime(0, t);
-    this.musicGain.gain.linearRampToValueAtTime(0.35, t + 1.5);
+    // Music plays continuously for the whole level — much quieter than a one-shot SFX gain
+    // would suggest, since sustained volume is far more fatiguing than a brief effect.
+    this.musicGain.gain.linearRampToValueAtTime(0.13, t + 1.5);
 
     this._musicNodes = [];
     this._musicTimers = [];
@@ -232,7 +245,7 @@ class AudioManager {
       blip.type = 'sine';
       blip.frequency.value = profile.baseFreq * (2 + Math.floor(Math.random() * 3));
       blipGain.gain.setValueAtTime(0.0001, now);
-      blipGain.gain.linearRampToValueAtTime(0.08, now + 0.02);
+      blipGain.gain.linearRampToValueAtTime(0.05, now + 0.02);
       blipGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
       blip.connect(blipGain).connect(this.musicGain);
       blip.start(now);

@@ -29,7 +29,10 @@ export default class TitleScene extends Phaser.Scene {
 
     this.cutsceneManager = new CutsceneManager();
     this._showFallback();
-    this.cutsceneManager.play('intro', () => {}, LORE_LINES); // if a real clip exists it overlays on top with timed subtitles; fallback text underneath either way
+    // Deliberately NOT auto-played here. This runs on scene load, before any user gesture has
+    // happened on the page — browsers block unmuted <video> autoplay in that situation, so the
+    // clip would only ever play silently. Playing it from the Start click instead (below)
+    // guarantees a real user gesture precedes it, so its own embedded audio actually plays.
   }
 
   _showFallback() {
@@ -57,9 +60,13 @@ export default class TitleScene extends Phaser.Scene {
 
     startBtn.once('pointerdown', () => {
       // Browser autoplay policy requires the AudioContext to be created/resumed from inside a
-      // user-gesture handler — this click is the first (and every) such gesture we get.
+      // user-gesture handler — this click is the first (and every) such gesture we get. It's
+      // also what makes the intro cutscene's own embedded audio actually allowed to play below.
       audioManager.init();
-      this.scene.start('LevelScene', { levelIndex: 0 });
+      startBtn.disableInteractive();
+      this.cutsceneManager.play('intro', () => {
+        this.scene.start('LevelScene', { levelIndex: 0 });
+      }, LORE_LINES);
     });
   }
 

@@ -1,5 +1,27 @@
 # Decisions Log
 
+## 2026-09-13 — Title intro cutscene moved to play on Start click, not on scene load
+
+**Decision:** `TitleScene` no longer auto-plays the intro cutscene in `create()`. It now plays
+when the Start button is clicked, immediately before transitioning to `LevelScene` — the lore
+text/title/Start button show first (silent, readable at the user's own pace), and clicking
+Start triggers the cutscene (now with a guaranteed real user gesture behind it) before gameplay
+begins.
+
+**Why:** User reported the intro video's own embedded audio wasn't playing. Root cause: the
+video was auto-playing in `create()`, which runs on page load before any user gesture exists —
+browsers block unmuted `<video>` autoplay in that situation, so `CutsceneManager`'s
+unmuted-first-fallback-to-muted logic was always landing on the muted fallback for this one
+specific call site (every other `play()` call site — level intros — already had a Start click
+or a level-transition in their history, so they were unaffected). Moving playback into the
+Start click handler itself guarantees a real gesture precedes it every time.
+
+**How to apply:** Any future auto-triggered cutscene (i.e., one that isn't the direct result of
+a click) will have this same problem. Prefer gating cutscene playback behind the nearest
+preceding user interaction rather than a scene's `create()`.
+
+---
+
 ## 2026-09-13 — Audio: fully procedural (music included), sequential fades, unmuted cutscenes
 
 **Decision:** All SFX and music are generated in code via the Web Audio API (`AudioManager.js`,

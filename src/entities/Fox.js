@@ -72,6 +72,23 @@ export default class Fox extends Phaser.Physics.Arcade.Sprite {
     this.health.takeDamage(damage);
     this.isInvulnerable = true;
     this._invulnTimerMs = HEALTH.POST_HIT_INVULN_MS;
+    this._playHitFeedback();
+  }
+
+  _playHitFeedback() {
+    this.setTint(0xff4444);
+    this.scene.tweens.killTweensOf(this);
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 0.25,
+      duration: 90,
+      yoyo: true,
+      repeat: Math.max(1, Math.round(HEALTH.POST_HIT_INVULN_MS / 180) - 1),
+      onComplete: () => {
+        this.clearTint();
+        this.setAlpha(1);
+      },
+    });
   }
 
   pickupChicken(healAmount) {

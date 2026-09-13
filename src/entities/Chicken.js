@@ -4,7 +4,7 @@ import { HEALTH } from '../config/constants.js';
 
 export default class Chicken extends Phaser.Physics.Arcade.Sprite {
   constructor(scene) {
-    super(scene, 0, 0, 'chicken');
+    super(scene, 0, 0, 'chicken-wing-up');
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.healAmount = HEALTH.CHICKEN_HEAL;
@@ -14,6 +14,7 @@ export default class Chicken extends Phaser.Physics.Arcade.Sprite {
   onSpawn() {
     this.body.setAllowGravity(false);
     this._startY = this.y;
+    this.play('chicken-fly');
     if (this._bobTween) this._bobTween.stop();
     this._bobTween = this.scene.tweens.add({
       targets: this,
@@ -30,5 +31,6 @@ export default class Chicken extends Phaser.Physics.Arcade.Sprite {
       this._bobTween.stop();
       this._bobTween = null;
     }
+    this.anims.stop();
   }
 }

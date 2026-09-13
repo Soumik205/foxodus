@@ -6,6 +6,56 @@ Newest entries at the top. Cross-reference the design spec at
 
 ---
 
+## 2026-09-13 — "Zombie contact does nothing" was a feedback gap, not a bug — added hit-flash + chicken wings
+
+**Decision:** After user reported chicken visuals looking "funny" and zombie contact "doesn't do
+anything," investigated live in a real browser session before touching any code. Confirmed via
+direct instrumentation (temporary console.log in the overlap callback, and a temporary
+`window.__DEBUG_GAME__` handle to step Phaser's loop manually) that the damage mechanic was
+**already working correctly**: the overlap fired every frame while touching, `takeHit()` applied
+~30 damage, and the invulnerability window correctly gated repeat hits. The actual problem was
+that nothing was *visible* — Milestone 3 has no HUD yet (that's Milestone 4), and there was no
+hit-reaction on the Fox sprite itself, so a real damage event looked identical to no damage event
+at all.
+
+**Why this matters for continuity:** don't re-debug this from scratch if it comes up again —
+the mechanic is sound. Added `Fox._playHitFeedback()` (red tint + alpha-flicker tween for the
+invulnerability window) so damage is visible independent of the HUD. Also gave the chicken actual
+wings and a 2-frame flap animation (`chicken-wing-up`/`chicken-wing-down`, `ChickenGraphics.js`)
+combined with its existing bob tween, so it reads as hovering/flying rather than a static blob —
+this was a legitimate visual gap, not a misdiagnosis.
+
+**How to apply:** When a user reports "X doesn't do anything" for a mechanic that unit
+tests/prior review already verified, check for a *feedback* gap before assuming a *logic* bug —
+verify the underlying state change is actually happening (health/flags/etc.) before rewriting
+game logic. See `CLAUDE.md`'s Handoff section for the debugging technique used (manual
+`game.loop.step()` driving, since browser-automation tabs are usually `document.visibilityState
+=== "hidden"` and throttle `requestAnimationFrame` to near-zero).
+
+---
+
+## 2026-09-13 — Phaser scene `shutdown()` is not framework-invoked — must bind to the event explicitly
+
+**Decision:** Every scene's `shutdown()` cleanup method (input listener teardown, texture
+removal, etc.) must be explicitly wired via `this.events.once('shutdown', this.shutdown, this);`
+at the top of `create()`. A method merely *named* `shutdown()` on a `Phaser.Scene` subclass is
+never called by the framework on its own.
+
+**Why:** Discovered during Task 3's code review (verified against
+`node_modules/phaser/src/scene/SceneManager.js` — only `init`/`preload`/`create`/`update` are
+framework-invoked by name). It was rated a Minor at the time because Phaser's own internal
+systems (Clock, TweenManager, DisplayList) independently self-register on the scene's shutdown
+event and happen to cover most of what our `shutdown()` methods were doing by accident — but the
+plan's Milestone 4 texture-cleanup fix (see the entry below on cutscene/texture management)
+genuinely depends on `shutdown()` running, since texture removal isn't a Phaser-internal system.
+
+**How to apply:** Every new Scene subclass that defines a `shutdown()` method must bind it via
+`this.events.once('shutdown', this.shutdown, this);` as the first line of `create()`. Already
+applied to `LevelScene`, `UIScene`, and `TitleScene` in the Milestone 4 plan
+(`docs/superpowers/plans/2026-09-13-foxodus-core-slice.md`).
+
+---
+
 ## 2026-09-13 — Cutscene scope: intro + ending + per-level transition cards
 
 **Decision:** 7 total Sora-generated video cutscenes — title/lore intro, 5 level-transition

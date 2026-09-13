@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
 import BootScene from './scenes/BootScene.js';
+import TitleScene from './scenes/TitleScene.js';
 import LevelScene from './scenes/LevelScene.js';
+import UIScene from './scenes/UIScene.js';
+import GameOverScene from './scenes/GameOverScene.js';
+import WinScene from './scenes/WinScene.js';
 import { SCREEN, PHYSICS } from './config/constants.js';
 
 const config = {
@@ -17,7 +21,7 @@ const config = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, LevelScene],
+  scene: [BootScene, TitleScene, LevelScene, UIScene, GameOverScene, WinScene],
 };
 
 new Phaser.Game(config);

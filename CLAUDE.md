@@ -20,8 +20,8 @@ Tracked here as each milestone completes. See `TODO` list in-session for live gr
 - [x] Milestone 2 — Core movement + camera
 - [x] Milestone 3 — Chicken health system + first enemy (+ chicken wing-flap anim, fox
       hit-flash feedback, added post-review per user request)
-- [ ] Milestone 4 — Level 1 end-to-end + lore intro + cutscene system ← **next up**
-- [ ] Milestone 5 — Levels 2–5 via config
+- [x] Milestone 4 — Level 1 end-to-end + lore intro + cutscene system
+- [ ] Milestone 5 — Levels 2–5 via config ← **next up**
 - [ ] Milestone 6 — Audio arc + SFX
 - [ ] Milestone 7 — Mobile touch controls
 - [ ] Milestone 8 — Buffer / bug triage / final polish
@@ -43,9 +43,13 @@ If you're a different AI session/tool picking this up:
 - **Ledger of everything done so far, task by task, with every review finding and ruling:**
   `.superpowers/sdd/2026-09-13-foxodus-core-slice/progress.md` (git-ignored — if this file is
   missing in your checkout, ask the user for it or reconstruct from `git log`).
-- **What's built:** run `npm install && npm run dev`, boots straight into a test `LevelScene`
-  (no title screen yet — that's Milestone 4) with a controllable fox, 4 bobbing/flapping
-  chickens, and one patrolling zombie with contact damage. No HUD yet.
+- **What's built:** run `npm install && npm run dev`. Boots to `TitleScene` (lore scroll +
+  Start button, with a `CutsceneManager`-driven video-or-fallback intro slot). Start loads Level 1
+  (`config/levels.js`, config-driven `LevelScene`) with a controllable fox, 6 bobbing/flapping
+  chickens, 2 patrolling zombies with contact damage, and a live HUD (`UIScene`: health bar +
+  dash-cooldown pip). Reaching `levelEndX` triggers `WinScene`; dying triggers `GameOverScene`
+  with a working Retry that restarts Level 1 fresh (full health, no duplicate-texture warnings —
+  verified via manual browser playthrough including the restart path).
 - **Known non-blocking gaps** (real, deferred with rulings in the ledger, not bugs to "fix
   blind"): `ObjectPool.despawn()` doesn't auto-call `onDespawn()` (manual at each call site,
   fragile for future pooled types); pool-exhaustion fallback spawns skip the ground collider
@@ -77,13 +81,13 @@ npm test         # Vitest — pure-logic unit tests only (HealthSystem, InputCon
 
 ```
 /src
-  /scenes        BootScene, LevelScene (built) — TitleScene, UIScene, GameOverScene,
-                 WinScene (Milestone 4, planned)
+  /scenes        BootScene, TitleScene, LevelScene, UIScene, GameOverScene, WinScene (built)
   /entities      Fox, Chicken, Enemy (base), ZombiePatrol (built) — Turret is stretch-only
-  /systems       InputController, HealthSystem, ObjectPool (built) — AudioManager,
-                 SaveManager, CutsceneManager (later milestones, planned)
+  /systems       InputController, HealthSystem, ObjectPool, CutsceneManager (built) —
+                 AudioManager, SaveManager (later milestones, planned)
   /graphics      FoxGraphics, BackgroundLayers, ChickenGraphics, EnemyGraphics (built)
-  /config        constants.js (built) — levels.js (Milestone 4, planned)
+  /config        constants.js, levels.js (built) — LEVELS[0] populated, [1..4] planned for
+                 Milestone 5
   main.js
 /public
   videos/        Sora-generated cutscene clips (late-bound, optional per slot) — not created

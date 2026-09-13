@@ -1,4 +1,4 @@
-// src/scenes/BootScene.js (temporary wiring for Task 2 verification — Task 4 rewires to TitleScene)
+// src/scenes/BootScene.js
 import Phaser from 'phaser';
 
 export default class BootScene extends Phaser.Scene {
@@ -7,6 +7,6 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start('LevelScene');
+    this.scene.start('TitleScene');
   }
 }

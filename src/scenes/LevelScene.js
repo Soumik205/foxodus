@@ -9,6 +9,7 @@ import ObjectPool from '../systems/ObjectPool.js';
 import Fox from '../entities/Fox.js';
 import Chicken from '../entities/Chicken.js';
 import ZombiePatrol from '../entities/ZombiePatrol.js';
+import CutsceneManager from '../systems/CutsceneManager.js';
 import { LEVELS } from '../config/levels.js';
 
 export default class LevelScene extends Phaser.Scene {
@@ -94,9 +95,19 @@ export default class LevelScene extends Phaser.Scene {
     this.scene.launch('UIScene', { levelScene: this });
 
     this._levelEnded = false;
+
+    // Per-level intro cutscene (design spec §3) — plays right before this level's gameplay
+    // starts, on every entry including retries. Falls back to an instant skip if no video
+    // exists for this level's cutsceneKey, same fallback pattern as TitleScene's intro.
+    this._introPlaying = true;
+    this.cutsceneManager = new CutsceneManager();
+    this.cutsceneManager.play(config.cutsceneKey, () => {
+      this._introPlaying = false;
+    });
   }
 
   update(time, delta) {
+    if (this._introPlaying) return;
     if (this._levelEnded) return;
 
     if (this.fox.health.isDead) {
@@ -125,6 +136,7 @@ export default class LevelScene extends Phaser.Scene {
   }
 
   shutdown() {
+    this.cutsceneManager.cancel();
     this.input_ = null;
     this.time.removeAllEvents();
     this.tweens.killAll();

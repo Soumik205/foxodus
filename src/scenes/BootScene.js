@@ -1,3 +1,4 @@
+// src/scenes/BootScene.js (temporary wiring for Task 2 verification — Task 4 rewires to TitleScene)
 import Phaser from 'phaser';
 
 export default class BootScene extends Phaser.Scene {
@@ -6,10 +7,6 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create() {
-    this.add.text(this.scale.width / 2, this.scale.height / 2, 'Foxodus — booted', {
-      fontFamily: 'monospace',
-      fontSize: '24px',
-      color: '#e8622c',
-    }).setOrigin(0.5);
+    this.scene.start('LevelScene');
   }
 }

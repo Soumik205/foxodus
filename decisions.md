@@ -1,5 +1,42 @@
 # Decisions Log
 
+## 2026-09-13 — User feedback round 1: resolution/HUD, difficulty, backgrounds, subtitles
+
+**Decision:** Implemented four user-requested changes to the shipped Milestone 1-4 build:
+(1) bumped internal render resolution 960×540 → 1280×720 (same 16:9 aspect, just crisper — HUD
+pixel values in `UIScene.js` scaled by 4/3 to preserve on-screen size) plus an explicit
+`fps: { target: 60, min: 30 }` Phaser config; (2) added 2 more zombies to Level 1 (4 total),
+kept deliberately modest since README §7 designates Level 1 as the tutorial ("sparse, 1 zombie
+type") with the real difficulty curve belonging to not-yet-built Levels 2-4; (3) a background-image
+pipeline (`LevelScene.preload()`/`create()`/`shutdown()`) that uses a user-provided
+`/public/backgrounds/<levelKey>.jpg` as the fixed distant sky layer when present, falling back to
+the existing procedural gradient when absent — same fallback philosophy as `CutsceneManager`;
+(4) synced subtitles for the title/intro cutscene, driven by the video's own `timeupdate` event
+against the existing lore-text lines (weighted by line length), with teardown wired into both
+`CutsceneManager.finish()` and `.cancel()`.
+
+**Why the background-image decision matters:** this deliberately breaks README §3's "no external
+art assets" pillar (locked, "do not violate without discussion"). Discussed explicitly with the
+user, who chose AI-generated images over further procedural generation — see
+`docs/background-prompts.md` for the 5 prompts. The fox/chicken/zombie sprites and UI remain 100%
+procedural; only the level backdrop is now an (optional, gracefully-falling-back) external image.
+
+**Known, accepted, non-blocking console noise:** Phaser's own loader (`File.js`/`ImageFile.js`)
+unconditionally `console.error`s when a preloaded image 404s — this fires for
+`/backgrounds/level1.jpg` (and eventually levels 2-5) until each file actually exists. This is
+Phaser-internal behavior, not a bug in the fallback logic (the procedural sky still renders
+correctly, confirmed via `textures.exists()`), and it disappears the moment each level's image is
+dropped in. Not worth engineering around (would need either a pre-flight `fetch` HEAD check
+staged before the scene's `preload()`, or suppressing `console.error` globally) given it's
+self-resolving and the user is already generating these images.
+
+**How to apply:** Don't be alarmed by "Failed to process file" console messages for
+`<level>-bg` keys during development — check `textures.exists()` to confirm the fallback path,
+not the absence of the console message. Once all 5 background images exist, this goes away
+entirely and the "no console errors" QA bar (README §12) is met cleanly.
+
+---
+
 ## 2026-09-13 — Plan A (Milestones 1-4, "core slice") complete — deferred items for Plan B
 
 **Decision:** The core-slice plan is done: all 4 tasks implemented, individually code-reviewed,

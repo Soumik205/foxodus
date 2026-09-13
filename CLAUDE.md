@@ -8,83 +8,107 @@ see `decisions.md`. For the full game design, see `README.md` and
 
 Foxodus: a 2D parallax platformer (Phaser 3 + Vite). A fox runs/jumps/dashes through 5 levels
 of an AI-ruled dystopia back to the forest, eating stolen chickens as a combined
-health/score/progression mechanic. All visuals are procedurally generated (no image assets);
-audio is procedural SFX + curated CC0 music; the title/ending/level-transition moments use
-Sora-generated video cutscenes with procedural fallbacks.
+health/score/progression mechanic. Character/creature art is 100% procedural (Canvas shapes
+baked into textures, no image files); level backgrounds are AI-generated images with a
+procedural fallback when a level's image doesn't exist yet (see decisions.md — this is a
+deliberate, discussed exception to "no external art"); all audio (SFX + music) is generated in
+code via the Web Audio API, no sound files at all; title/level-intro/ending moments use
+AI-generated video cutscenes (Sora) with procedural/text fallbacks.
 
 ## Status
 
-Tracked here as each milestone completes. See `TODO` list in-session for live granular tasks.
+Tracked here as each milestone/session completes. Session paused here as of 2026-09-13 evening
+— user is picking this back up "tomorrow."
 
 - [x] Milestone 1 — Scaffold & deploy skeleton
 - [x] Milestone 2 — Core movement + camera
 - [x] Milestone 3 — Chicken health system + first enemy (+ chicken wing-flap anim, fox
       hit-flash feedback, added post-review per user request)
 - [x] Milestone 4 — Level 1 end-to-end + lore intro + cutscene system
-- [x] Feedback round 1 (post-Milestone-4): 1280×720 resolution + HUD rescale + explicit 60fps
-      config; 4 zombies in Level 1 (was 2); background-image pipeline (external AI images,
-      procedural fallback — see `decisions.md`); synced subtitles for the intro cutscene
-- [x] Feedback round 2: fixed CSP blocking background images (blob: missing from img-src),
-      recalibrated chicken heights (empirically, not just formula), removed procedural
-      silhouette "boxes" when a real background image is present, wired levels.js LEVELS[1..4]
-      (Milestones 5's config work, done ad hoc — not yet playtested as thoroughly as Level 1),
-      wired per-level intro cutscenes into LevelScene (were configured but never played)
-- [x] Milestone 6 — Audio: procedural SFX (jump/dash/pickup/hit/level-complete/game-over) via
-      Web Audio API in `AudioManager.js`; generative ambient music per level that fades between
-      levels (sequential fade-out/fade-in, not a true overlapping crossfade — see decisions.md);
-      cutscene videos unmuted so their own embedded audio plays, with a muted-autoplay fallback
-      if the browser blocks unmuted playback before a user gesture
-- [ ] Milestone 7 — Mobile touch controls ← **next up**
-- [ ] Milestone 8 — Buffer / bug triage / final polish
+- [x] Milestone 5 — Levels 2–5 wired via config (done ad hoc during a time-crunched session, not
+      through the formal plan process — **only Level 1 has had a real playthrough pass**; 2–5
+      exist and build/run but haven't been walked start-to-finish yet)
+- [x] Milestone 6 — Audio: procedural SFX (jump/dash/pickup/hit/level-complete/game-over) +
+      generative ambient music per level, all via Web Audio API in `AudioManager.js`, no sound
+      files. Cutscene videos play unmuted (their own embedded audio), gated behind the Start
+      button click so the browser's autoplay-audio policy doesn't silently mute them.
+- [ ] Milestone 7 — Mobile touch controls ← **next up.** Currently keyboard-only; on-screen
+      d-pad/jump/dash overlay for touch is a locked requirement (README §3) not yet started.
+- [ ] Milestone 8 — Buffer / bug triage / final polish / deploy. No memory profiling done yet,
+      no full playthrough of Levels 2–5, not deployed anywhere.
 
-## Handoff / continuity (read this first if picking up mid-session)
+**Also outstanding, not tied to a milestone number:**
+- 5 more cutscene videos (level2.mp4 through level5.mp4, ending.mp4 — prompts in
+  `docs/cutscene-prompts.md`) and any remaining background images beyond what's already in
+  `/public/backgrounds/` — user is generating these; wire in whichever land, no code changes
+  needed per the fallback pattern.
+- Stretch goals (README §13): 2nd enemy type/turret, checkpoint respawn, mute button, best-time
+  tracking, particle effects — only worth attempting once 7–8 are done.
 
-This project is being built under a ~3-hour time budget via subagent-driven development
-(implementer subagent → code-review subagent → controller resolves findings, per milestone).
-If you're a different AI session/tool picking this up:
+## Handoff / continuity (read this first if picking up mid-session or as a different AI tool)
 
-- **Plan file:** `docs/superpowers/plans/2026-09-13-foxodus-core-slice.md` — covers Milestones
-  1–4 in full task-by-task detail (exact code, file lists, verification steps), all implemented.
-  Read it for context on decisions already made (texture-cleanup guards, Phaser `shutdown()`
-  event wiring — see below), and as the template for Plan B's (Milestones 5–8) structure.
-- **Design spec:** `docs/superpowers/specs/2026-09-13-foxodus-design.md` — audio/cutscene
-  architecture and delivery process, additive to `README.md`.
-- **Decision history:** `decisions.md` — read this for *why*, especially the entries on Phaser's
-  `shutdown()` gotcha and the debugging session below.
-- **Ledger of everything done so far, task by task, with every review finding and ruling:**
-  `.superpowers/sdd/2026-09-13-foxodus-core-slice/progress.md` (git-ignored — if this file is
-  missing in your checkout, ask the user for it or reconstruct from `git log`).
-- **What's built:** run `npm install && npm run dev`. Boots to `TitleScene` (lore scroll +
-  Start button, with a `CutsceneManager`-driven video-or-fallback intro slot, now with synced
-  subtitles drawn from the same lore lines once a real video exists). Start loads Level 1
-  (`config/levels.js`, config-driven `LevelScene`, 1280×720 internal resolution) with a
-  controllable fox, 6 bobbing/flapping chickens, 4 patrolling zombies with contact damage, a
-  background image if `/public/backgrounds/level1.jpg` exists (else procedural gradient), and a
-  live HUD (`UIScene`: health bar + dash-cooldown pip, scaled for the current resolution).
-  Reaching `levelEndX` triggers `WinScene`; dying triggers `GameOverScene` with a working Retry
-  that restarts Level 1 fresh (full health, no duplicate-texture warnings — verified via manual
-  browser playthrough including the restart path).
-- **Known non-blocking gaps** (real, deferred with rulings in the ledger, not bugs to "fix
-  blind"): `ObjectPool.despawn()` doesn't auto-call `onDespawn()` (manual at each call site,
-  fragile for future pooled types); pool-exhaustion fallback spawns skip the ground collider
-  (never triggered by any current level config). Both are documented, low-risk, and intentionally
-  deferred to Plan B (Milestones 5–8, not yet planned as of this writing).
-- **Fixed this session:** a final whole-branch review found `CutsceneManager` had no cancel/
-  teardown path — clicking Start on `TitleScene` before the intro clip's `loadedmetadata` probe
-  resolved could leave a full-screen video overlay appended on top of the already-running
-  `LevelScene`. Added `CutsceneManager.cancel()` (tears down the in-flight probe or playing
-  overlay without invoking `onComplete`) and wired it into `TitleScene.shutdown()`.
+Milestones 1–4 were built via full subagent-driven development (implementer subagent →
+code-review subagent → controller resolves findings, per task) under an initial ~3-hour budget.
+Once that budget was consumed, everything from Milestone 5 onward (levels 2–5, all bug-fix
+rounds, audio) was done via **direct fast iteration** — reading/editing files and verifying live
+in a browser myself, without the subagent-review ceremony — because the user needed speed over
+process rigor at that point. Both are legitimate for this project; don't assume everything after
+the core-slice plan went through a formal review.
+
+- **Plan file:** `docs/superpowers/plans/2026-09-13-foxodus-core-slice.md` — Milestones 1–4 in
+  full task-by-task detail (exact code, file lists, verification steps), all implemented and
+  since extended by direct edits. Good as a reference for conventions/patterns, not as a
+  to-do list (it's finished).
+- **Design spec:** `docs/superpowers/specs/2026-09-13-foxodus-design.md` — original audio/
+  cutscene architecture plan. Note: the audio *sourcing* decision in it (curated CC0 music) was
+  later superseded — see `decisions.md`'s "Audio: fully procedural" entry. Everything else in
+  the spec still holds.
+- **Decision history — read `decisions.md` in full before making any non-trivial change.** It's
+  long but every entry is a real gotcha or reasoning trail encountered while building this exact
+  codebase (Phaser's `shutdown()` not auto-invoking, a CSP bug that looked like a broken image,
+  why chicken heights needed empirical measurement not formula math, why cutscene audio needs a
+  user gesture, audio gain tuning after an "it's hurting my ears" report, etc.). Skipping this
+  and re-deriving from scratch will waste time rediscovering things already solved.
+- **No active SDD ledger exists right now** — Plan A's ledger was migrated into `decisions.md`
+  and its workspace deleted once that plan finished cleanly. If a future formal plan (e.g. a
+  proper Milestone 7/8 plan) gets written and executed via subagent-driven-development, a new
+  ledger will appear under `.superpowers/sdd/<plan-name>/` (git-ignored).
+- **What's built / how to check it:** `npm install && npm run dev`. Boots to `TitleScene` (lore
+  text + Start button; clicking Start plays the intro cutscene *with audio* if
+  `/public/videos/intro.mp4` exists, then loads Level 1). Levels use `config/levels.js`
+  (all 5 populated), 1280×720 internal resolution, a live HUD (health bar + dash-cooldown pip),
+  per-level background image if `/public/backgrounds/<key>.jpg` exists (procedural gradient
+  fallback otherwise, and the procedural mid/near "silhouette" parallax layers are hidden
+  whenever a real image is present — they look bad layered over real art), a per-level intro
+  cutscene (video-or-instant-skip) before that level's gameplay unlocks, procedural SFX +
+  generative background music, and progression through all 5 levels to a real ending (`WinScene`)
+  or `GameOverScene` + Retry on death.
+- **Known non-blocking gaps** (real, low-risk, deliberately deferred — see `decisions.md`'s
+  "Plan A complete — deferred items for Plan B" entry for the full reasoning): `ObjectPool`
+  doesn't auto-call `onDespawn()`; pool-exhaustion fallback skips the ground collider (currently
+  unreachable since every pool is sized exactly to its spawn count); `levels.js`'s
+  `enemies[].type` field is unread (only one enemy type exists so far).
 - **Gotcha for anyone testing in a headless/automated browser tab:** if `document.visibilityState`
   is `"hidden"` (common in browser-automation tooling), Chrome throttles `requestAnimationFrame`
-  to near-zero and Phaser's game loop won't advance on its own. Work around it by temporarily
-  adding `window.__DEBUG_GAME__ = new Phaser.Game(config);` in `src/main.js`, then drive frames
-  manually from the console/devtools with `game.loop.step(performance.now())` in a loop — always
-  pass a real timestamp, `game.loop.step()` with no argument corrupts the loop's internal time to
-  `NaN`. **Always revert the `window.__DEBUG_GAME__` line before committing** — grep for it if
-  unsure (`grep -rn DEBUG_GAME src/`).
+  to near-zero and Phaser's game loop won't advance on its own, AND large `<video>`/image loads
+  can take several real seconds to resolve even though nothing is visibly happening. Work around
+  the frame-throttling by temporarily adding `window.__DEBUG_GAME__ = new Phaser.Game(config);`
+  in `src/main.js`, then drive frames manually with `game.loop.step(performance.now())` in a
+  loop — always pass a real timestamp, a no-arg call corrupts the loop's internal time to `NaN`.
+  **Always revert the `window.__DEBUG_GAME__` line before committing** — grep for it if unsure
+  (`grep -rn DEBUG_GAME src/`).
 - **Gotcha:** navigating a browser-automation tab to the *same* URL it's already on can silently
-  no-op instead of reloading (stale JS state, e.g. health not resetting to 100). Use
-  `location.reload()` via the JS-exec tool instead when you need a guaranteed-fresh page state.
+  no-op instead of reloading (stale JS state). Use `location.reload()` via the JS-exec tool when
+  you need a guaranteed-fresh page state.
+- **Gotcha:** clicking a Phaser UI element via screen-pixel coordinates in browser automation is
+  unreliable (viewport/canvas scaling varies between screenshot calls). More reliable: get a
+  `window.__DEBUG_GAME__` handle and either call `scene.children.list.find(...)` for the target
+  text object and `.emit('pointerdown')` directly, or drive gameplay via direct state
+  manipulation (`scene.fox.setPosition(...)`, etc.) instead of simulated clicks/keys.
+- **Gotcha:** browsers block unmuted `<video>`/audio autoplay before any real user gesture has
+  occurred on the page. Anything that should play *with sound* automatically must be triggered
+  from inside a click handler (see how `TitleScene`'s Start button gates both `AudioManager.init()`
+  and the intro cutscene) — never from a scene's bare `create()`.
 
 ## Commands
 
@@ -109,11 +133,10 @@ npm test         # Vitest — pure-logic unit tests only (HealthSystem, InputCon
                  well-playtested; 2-5 need a playthrough pass
   main.js
 /public
-  videos/        Sora-generated cutscene clips (late-bound, optional per slot) — not created
-                 yet, prompts are in docs/cutscene-prompts.md
-  backgrounds/   AI-generated level background images (late-bound, optional per level, falls
-                 back to procedural gradient) — not created yet, prompts are in
-                 docs/background-prompts.md
+  videos/        intro.mp4, level1.mp4 present. level2-5.mp4 + ending.mp4 still missing (fall
+                 back to instant-skip) — prompts in docs/cutscene-prompts.md
+  backgrounds/   level1-5.jpg ALL present (all 5 levels have real AI backgrounds now) —
+                 prompts in docs/background-prompts.md, in case any need regenerating
 /tests           HealthSystem.test.js, InputController.test.js — Vitest, pure-logic only
 ```
 
@@ -140,6 +163,11 @@ Key architectural rules to preserve (see README §8–10 for full detail):
 - **Hit/damage feedback needs to be visible without relying on the HUD alone** — `Fox.takeHit()`
   triggers a red tint + alpha-flicker tween for the invulnerability window
   (`src/entities/Fox.js`). Follow this pattern for any other feedback-needing event.
+- **Audio is a module singleton, not a per-scene object.** `import audioManager from
+  '.../AudioManager.js'` returns the SAME instance everywhere (plain JS module caching — no
+  Phaser registry needed). Its `AudioContext` is created lazily via `.init()`, which must be
+  called from inside a real user-gesture handler (a click), never at module load or in a
+  scene's bare `create()` — see the autoplay-policy gotchas above and in `decisions.md`.
 
 ## Conventions
 

@@ -1,5 +1,87 @@
 # Decisions Log
 
+Dated record of every non-obvious decision made during development, with reasoning.
+Newest entries at the top. Cross-reference the design spec at
+`docs/superpowers/specs/2026-09-13-foxodus-design.md` for the full picture.
+
+---
+
+## 2026-09-13 — Audio rebalanced: too bassy/loud, per user report ("hurting ears")
+
+**Decision:** Master gain 0.6→0.32; added a 100Hz highpass filter on the master bus (cuts
+sub-bass rumble from every sound uniformly, SFX and music alike); music base frequencies moved
+out of the deep sub-bass register (was 50–75Hz, now 84–130Hz — mood differences still come
+through via filter cutoff/waveform/detune, not raw low pitch); music bed gain 0.35→0.13 (it's
+continuous for a whole level, so needs to sit well under one-shot SFX); individual SFX peak
+gains trimmed ~20–30% across the board.
+
+**Why:** Low fundamental frequencies at meaningful volume are physically uncomfortable
+regardless of the sound design intent — this isn't a taste issue, it's a "this actually hurts to
+listen to" bug. A continuously-playing background bed is far more fatiguing than a brief SFX at
+the same gain, so it needed a much bigger cut than the one-shots.
+
+**How to apply:** If new SFX/music get added later, keep fundamentals above ~80Hz and audition
+anything continuous (music, ambient loops) at noticeably lower gain than one-shot effects.
+
+---
+
+## 2026-09-13 — Per-level intro cutscenes wired into LevelScene (were configured but dead)
+
+**Decision:** Each level now plays its own cutscene (`config.cutsceneKey`, via `CutsceneManager`)
+right before that level's gameplay starts — gated by an `_introPlaying` flag that pauses
+`update()` (health drain, input, everything) until the video completes or the instant-skip
+fallback fires. Plays on every entry, including `GameOverScene` retries of the same level.
+
+**Why:** `cutsceneKey` existed in `levels.js` since Milestone 4 but nothing ever called
+`cutsceneManager.play()` with it — only `TitleScene`'s intro was ever wired up. User asked why
+`level1.mp4` didn't play on the 1→2 transition; the real answer was the whole system was dead
+code, and separately, `level1.mp4` was always meant to play before Level 1, not on a
+transition into it.
+
+**How to apply:** `LevelScene.shutdown()` calls `cutsceneManager.cancel()`, same pattern as
+`TitleScene`. Background music intentionally doesn't start until this cutscene finishes (see the
+audio entry below) so a video's embedded audio and procedural music never overlap.
+
+---
+
+## 2026-09-13 — Levels 2-5 wired via config; win-condition now advances through all 5
+
+**Decision:** Populated `LEVELS[1..4]` in `levels.js` (same shape as Level 1: palette, chickens,
+enemies, world width) and changed `LevelScene`'s win-trigger to start the next `LevelScene` with
+`levelIndex + 1` instead of always jumping to `WinScene` — only the actual last level triggers
+the real ending. Updated `WinScene`'s copy (was "more levels coming in Plan B", now reflects the
+actual story ending).
+
+**Why:** Done ad hoc under a hard user-stated time limit ("finish within 30 minutes"), not
+through the formal task-by-task plan process Milestones 1-4 used. **Levels 2-5 have NOT had a
+real playthrough pass** — they build and the config is structurally sound, but nobody has
+actually walked through Level 3, 4, or 5 checking for soft-locks, unreachable chickens (the same
+class of bug Level 1 had — see below), or unfair enemy density. Treat them as "probably fine,
+unverified" until someone does that pass.
+
+---
+
+## 2026-09-13 — Chicken heights required empirical measurement, not formula math (twice)
+
+**Decision:** Chicken/`playerStart` Y values in `levels.js` are tuned by actually measuring the
+fox's jump in a live browser session (driving Phaser's loop manually, reading
+`fox.body.top` at the apex), not by computing `v²/2g` and scaling proportionally.
+
+**Why:** First attempt scaled old values by the resolution ratio (4/3) using the kinematic jump
+formula — still wrong, because Phaser's discrete per-frame gravity integration produces a
+noticeably *smaller* actual rise (~92px measured) than the continuous-time formula predicts
+(~97px). The theoretical answer was close enough to look plausible but was still ~12-40px off,
+and the user had to report "still not working" before it got caught. Also separately removed
+the procedural mid/near silhouette layers ("boxes") whenever a real background image is present
+— they were rendering on top of the AI-generated art and looked bad.
+
+**How to apply:** For any future jump-reachability tuning (a new level, a new collectible
+placement), measure the actual apex live rather than trusting the formula — see `CLAUDE.md`'s
+Handoff section for the `game.loop.step()` technique. Don't ship a formula-derived number as if
+it were verified.
+
+---
+
 ## 2026-09-13 — Title intro cutscene moved to play on Start click, not on scene load
 
 **Decision:** `TitleScene` no longer auto-plays the intro cutscene in `create()`. It now plays
@@ -72,6 +154,8 @@ resource type mysteriously fails to load only through Phaser's loader (not via d
 **Also (minor, not the actual fix):** re-encoded the 5 background images to clean 1280×720
 JPEGs via `sips` (were 3168×1344, ~2.5MB each) — smaller and matches the requested export spec,
 done in case it was a contributing factor before the CSP root cause was found. Harmless either way.
+
+---
 
 ## 2026-09-13 — User feedback round 1: resolution/HUD, difficulty, backgrounds, subtitles
 
@@ -155,12 +239,6 @@ tracked file. This entry is that migration for the items intentionally deferred 
 Milestones 5-8's task breakdown — several items (the pooling collider consolidation, the enemy
 `type` field) are cheapest to address exactly when Plan B's own work already touches those files,
 rather than as separate cleanup tasks.
-
----
-
-Dated record of every non-obvious decision made during development, with reasoning.
-Newest entries at the top. Cross-reference the design spec at
-`docs/superpowers/specs/2026-09-13-foxodus-design.md` for the full picture.
 
 ---
 

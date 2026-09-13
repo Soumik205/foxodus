@@ -21,6 +21,9 @@ Tracked here as each milestone completes. See `TODO` list in-session for live gr
 - [x] Milestone 3 — Chicken health system + first enemy (+ chicken wing-flap anim, fox
       hit-flash feedback, added post-review per user request)
 - [x] Milestone 4 — Level 1 end-to-end + lore intro + cutscene system
+- [x] Feedback round 1 (post-Milestone-4): 1280×720 resolution + HUD rescale + explicit 60fps
+      config; 4 zombies in Level 1 (was 2); background-image pipeline (external AI images,
+      procedural fallback — see `decisions.md`); synced subtitles for the intro cutscene
 - [ ] Milestone 5 — Levels 2–5 via config ← **next up**
 - [ ] Milestone 6 — Audio arc + SFX
 - [ ] Milestone 7 — Mobile touch controls
@@ -44,12 +47,15 @@ If you're a different AI session/tool picking this up:
   `.superpowers/sdd/2026-09-13-foxodus-core-slice/progress.md` (git-ignored — if this file is
   missing in your checkout, ask the user for it or reconstruct from `git log`).
 - **What's built:** run `npm install && npm run dev`. Boots to `TitleScene` (lore scroll +
-  Start button, with a `CutsceneManager`-driven video-or-fallback intro slot). Start loads Level 1
-  (`config/levels.js`, config-driven `LevelScene`) with a controllable fox, 6 bobbing/flapping
-  chickens, 2 patrolling zombies with contact damage, and a live HUD (`UIScene`: health bar +
-  dash-cooldown pip). Reaching `levelEndX` triggers `WinScene`; dying triggers `GameOverScene`
-  with a working Retry that restarts Level 1 fresh (full health, no duplicate-texture warnings —
-  verified via manual browser playthrough including the restart path).
+  Start button, with a `CutsceneManager`-driven video-or-fallback intro slot, now with synced
+  subtitles drawn from the same lore lines once a real video exists). Start loads Level 1
+  (`config/levels.js`, config-driven `LevelScene`, 1280×720 internal resolution) with a
+  controllable fox, 6 bobbing/flapping chickens, 4 patrolling zombies with contact damage, a
+  background image if `/public/backgrounds/level1.jpg` exists (else procedural gradient), and a
+  live HUD (`UIScene`: health bar + dash-cooldown pip, scaled for the current resolution).
+  Reaching `levelEndX` triggers `WinScene`; dying triggers `GameOverScene` with a working Retry
+  that restarts Level 1 fresh (full health, no duplicate-texture warnings — verified via manual
+  browser playthrough including the restart path).
 - **Known non-blocking gaps** (real, deferred with rulings in the ledger, not bugs to "fix
   blind"): `ObjectPool.despawn()` doesn't auto-call `onDespawn()` (manual at each call site,
   fragile for future pooled types); pool-exhaustion fallback spawns skip the ground collider
@@ -97,6 +103,9 @@ npm test         # Vitest — pure-logic unit tests only (HealthSystem, InputCon
 /public
   videos/        Sora-generated cutscene clips (late-bound, optional per slot) — not created
                  yet, prompts are in docs/cutscene-prompts.md
+  backgrounds/   AI-generated level background images (late-bound, optional per level, falls
+                 back to procedural gradient) — not created yet, prompts are in
+                 docs/background-prompts.md
 /tests           HealthSystem.test.js, InputController.test.js — Vitest, pure-logic only
 ```
 

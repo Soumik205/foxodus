@@ -964,6 +964,7 @@ export default class Chicken extends Phaser.Physics.Arcade.Sprite {
   constructor(scene) {
     super(scene, 0, 0, 'chicken');
     scene.add.existing(this);
+    scene.physics.add.existing(this);
     this.healAmount = HEALTH.CHICKEN_HEAL;
     this._bobTween = null;
   }
@@ -1002,6 +1003,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, textureKey) {
     super(scene, x, y, textureKey);
     scene.add.existing(this);
+    scene.physics.add.existing(this);
     this.contactDamage = HEALTH.ENEMY_DAMAGE;
   }
 }
@@ -1284,9 +1286,11 @@ export default class LevelScene extends Phaser.Scene {
     const config = LEVELS[this.levelIndex];
     this.config = config;
 
-    generateFoxTextures(this);
-    generateChickenTexture(this);
-    generateZombieTexture(this);
+    // Character textures are identical across every level/restart — generate once, keep cached.
+    // Per-level parallax textures ARE removed in shutdown() below, so always regenerate them.
+    if (!this.textures.exists('fox-idle')) generateFoxTextures(this);
+    if (!this.textures.exists('chicken')) generateChickenTexture(this);
+    if (!this.textures.exists('zombie')) generateZombieTexture(this);
     generateParallaxTextures(this, config.key, config.palette);
 
     this.physics.world.setBounds(0, 0, config.worldWidth, this.scale.height);
@@ -1359,6 +1363,12 @@ export default class LevelScene extends Phaser.Scene {
     this.input_ = null;
     this.time.removeAllEvents();
     this.tweens.killAll();
+    // Per-level parallax textures won't be reused if a different level's config loads next
+    // (README §10) — character textures (fox/chicken/zombie) are intentionally NOT removed
+    // here since every level reuses the same actor art (guarded by textures.exists() in create()).
+    this.textures.remove(`${this.config.key}-sky`);
+    this.textures.remove(`${this.config.key}-mid`);
+    this.textures.remove(`${this.config.key}-near`);
   }
 }
 ```

@@ -1,5 +1,6 @@
 // src/scenes/WinScene.js
 import Phaser from 'phaser';
+import CutsceneManager from '../systems/CutsceneManager.js';
 
 export default class WinScene extends Phaser.Scene {
   constructor() {
@@ -7,6 +8,22 @@ export default class WinScene extends Phaser.Scene {
   }
 
   create() {
+    this.events.once('shutdown', this.shutdown, this); // see LevelScene.create() for why this is required
+
+    this.cameras.main.setBackgroundColor('#0a0e14');
+    this.cutsceneManager = new CutsceneManager();
+    this.cutsceneManager.play('ending', () => {
+      this._showFallback();
+    });
+  }
+
+  shutdown() {
+    this.cutsceneManager.cancel();
+    this.time.removeAllEvents();
+    this.tweens.killAll();
+  }
+
+  _showFallback() {
     this.add.text(this.scale.width / 2, this.scale.height / 2 - 20, 'Home.', {
       fontFamily: 'monospace', fontSize: '32px', color: '#8fe86c',
     }).setOrigin(0.5);

@@ -6,6 +6,51 @@ Newest entries at the top. Cross-reference the design spec at
 
 ---
 
+## 2026-09-14 — WinScene never actually played the ending cutscene
+
+**Decision:** `WinScene.create()` now calls `cutsceneManager.play('ending', () =>
+this._showFallback())` before rendering the existing "Home." / "Back to Title" text, same
+pattern as `TitleScene`'s intro and `LevelScene`'s per-level intros (`cutsceneManager` created
+in `create()`, torn down via `cancel()` in a properly-bound `shutdown()`).
+
+**Why:** `ending.mp4` was deployed and reachable, but the user reported it "not showing" —
+the real bug wasn't the asset, it was that `WinScene` never called `CutsceneManager.play()` for
+the `ending` slot at all. It just skipped straight to the static win text. Easy to miss because
+every *other* cutscene slot (title, per-level) was correctly wired, so the pattern looked
+complete at a glance.
+
+**How to apply:** When adding a new cutscene slot to any scene, grep for an existing
+`cutsceneManager.play(...)` call site and confirm the new one is actually reachable in
+`create()` — don't assume a slot existing in `docs/cutscene-prompts.md` or having a file in
+`/public/videos/` means it's wired up anywhere.
+
+---
+
+## 2026-09-14 — GitHub Pages deploy: root-absolute asset paths broke under the `/foxodus/` base
+
+**Decision:** Set `base: '/foxodus/'` in `vite.config.js` (required for a GitHub Pages project
+site at `soumik205.github.io/foxodus/`), added `.github/workflows/deploy.yml` (build + deploy on
+push to `main`), and changed the two runtime-constructed asset paths —
+`LevelScene.js`'s background image load and `CutsceneManager.js`'s video `src` — from
+hardcoded `/backgrounds/...` / `/videos/...` to `${import.meta.env.BASE_URL}backgrounds/...` /
+`${import.meta.env.BASE_URL}videos/...`.
+
+**Why:** Vite only rewrites asset references it can see at build time (e.g. `<link>`/`<script>`
+tags in `index.html`, `import`-ed assets) to include `base`. Paths built as plain JS string
+literals at runtime are invisible to that rewrite, so they kept resolving against the domain
+root (`soumik205.github.io/backgrounds/...`, a 404) instead of the actual site path
+(`soumik205.github.io/foxodus/backgrounds/...`). This shipped once, silently — the deploy
+workflow succeeded and the files genuinely existed at the correct URL, so it looked like
+everything was fine until backgrounds/videos didn't render in the browser.
+
+**How to apply:** Any future runtime-constructed path into `/public` (not just images/video)
+needs the same `import.meta.env.BASE_URL` prefix. Grep for hardcoded `` `/<word>/`` `` template
+literals in `src/` if this class of bug resurfaces — `intro.mp4`/`level1-5.mp4` are always
+requested off the page's own origin so this only bites project-page deploys, not `npm run dev`
+(base defaults to `/` there) or a user/org-page deploy (served from the domain root already).
+
+---
+
 ## 2026-09-13 — Audio rebalanced: too bassy/loud, per user report ("hurting ears")
 
 **Decision:** Master gain 0.6→0.32; added a 100Hz highpass filter on the master bus (cuts

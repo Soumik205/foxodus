@@ -17,9 +17,9 @@ AI-generated video cutscenes (Sora) with procedural/text fallbacks.
 
 ## Status
 
-Tracked here as each milestone/session completes. As of 2026-09-14, Milestone 7 (mobile touch
-controls) is next up and not yet started — the 2026-09-14 session so far has only been cutscene
-asset wiring (see "Also outstanding" below), no code changes.
+Tracked here as each milestone/session completes. As of 2026-09-14, the game is deployed and
+live at **https://soumik205.github.io/foxodus/** (GitHub Pages, auto-deployed via GitHub Actions
+on every push to `main`). Milestone 7 (mobile touch controls) is next up and not yet started.
 
 - [x] Milestone 1 — Scaffold & deploy skeleton
 - [x] Milestone 2 — Core movement + camera
@@ -35,17 +35,24 @@ asset wiring (see "Also outstanding" below), no code changes.
       button click so the browser's autoplay-audio policy doesn't silently mute them.
 - [ ] Milestone 7 — Mobile touch controls ← **next up.** Currently keyboard-only; on-screen
       d-pad/jump/dash overlay for touch is a locked requirement (README §3) not yet started.
-- [ ] Milestone 8 — Buffer / bug triage / final polish / deploy. No memory profiling done yet,
-      no full playthrough of Levels 2–5, not deployed anywhere.
+- [~] Milestone 8 — Buffer / bug triage / final polish / deploy. **Deploy is done** (see above);
+      everything else isn't — no memory profiling done yet, no full playthrough of Levels 2–5.
 
 **Also outstanding, not tied to a milestone number:**
-- 2 more cutscene videos (`level5.mp4`, `ending.mp4` — prompts in `docs/cutscene-prompts.md`).
-  `level2.mp4`–`level4.mp4` landed 2026-09-14 as `.mov` exports and were remuxed to `.mp4`
-  (stream copy, already H.264/AAC — no re-encode needed) since `CutsceneManager.js` only ever
-  probes the `.mp4` filename; the `.mov` originals are still sitting in `/public/videos/` as
-  backups. Any remaining background images beyond what's already in `/public/backgrounds/` are
-  also outstanding — user is generating these; wire in whichever land, no code changes needed
-  per the fallback pattern.
+- All 7 cutscene videos are now in place (`intro`, `level1`–`level5`, `ending`) and confirmed
+  live on the deployed site — the cutscene-asset work called out in earlier sessions is done.
+  `level2.mp4`–`level4.mp4` landed as `.mov` exports and were remuxed to `.mp4` (stream copy,
+  already H.264/AAC — no re-encode needed); those `.mov` originals are gitignored
+  (`public/videos/*.mov`) and kept locally as backups only — `CutsceneManager.js` only ever
+  probes the exact `.mp4` filename, so they're dead weight in the deployed bundle otherwise.
+  `level5.mp4` and `ending.mp4` landed already as `.mp4`, no remux needed.
+- Two deploy-related bugs found and fixed post-launch, 2026-09-14 (see `decisions.md` for full
+  detail): (1) background/video asset paths were root-absolute and broke under the Pages
+  `/foxodus/` base path — fixed via `import.meta.env.BASE_URL`; (2) `WinScene` never actually
+  called `CutsceneManager.play('ending', ...)` despite the file existing — the ending cutscene
+  had no wiring to ever play. Both fixed and redeployed; if a *new* background/video/asset type
+  is added later, check it isn't hit by either class of bug.
+- All 5 background images (`level1-5.jpg`) present in `/public/backgrounds/`.
 - Stretch goals (README §13): 2nd enemy type/turret, checkpoint respawn, mute button, best-time
   tracking, particle effects — only worth attempting once 7–8 are done.
 
@@ -137,14 +144,28 @@ npm test         # Vitest — pure-logic unit tests only (HealthSystem, InputCon
                  well-playtested; 2-5 need a playthrough pass
   main.js
 /public
-  videos/        intro.mp4, level1-4.mp4 present. level5.mp4 + ending.mp4 still missing (fall
-                 back to instant-skip) — prompts in docs/cutscene-prompts.md. CutsceneManager
-                 only probes the exact `<slot>.mp4` filename — any other extension (e.g. a
-                 raw .mov export) is silently treated as missing and falls back instantly.
+  videos/        intro.mp4, level1-5.mp4, ending.mp4 — ALL 7 cutscene slots present. Asset
+                 paths are built at runtime as `${import.meta.env.BASE_URL}videos/<slot>.mp4`
+                 (see decisions.md 2026-09-14 — root-absolute paths broke under the Pages
+                 /foxodus/ base). CutsceneManager only probes the exact `<slot>.mp4` filename —
+                 any other extension (e.g. a raw .mov export) is silently treated as missing and
+                 falls back instantly. `.mov` originals for level2-4 are gitignored, kept
+                 locally as backups only.
   backgrounds/   level1-5.jpg ALL present (all 5 levels have real AI backgrounds now) —
-                 prompts in docs/background-prompts.md, in case any need regenerating
+                 prompts in docs/background-prompts.md, in case any need regenerating. Same
+                 BASE_URL path-prefix requirement as videos/ above (LevelScene.js).
 /tests           HealthSystem.test.js, InputController.test.js — Vitest, pure-logic only
 ```
+
+## Deployment
+
+Live at **https://soumik205.github.io/foxodus/**, via `.github/workflows/deploy.yml` (build +
+`actions/deploy-pages` on every push to `main`; GitHub Pages source is set to "GitHub Actions" in
+repo settings, a one-time manual toggle already done). `vite.config.js` sets `base: '/foxodus/'`
+to match the project-page subpath — any code that builds a `/public`-rooted asset path at
+runtime (not via `import`/`<link>`/`<script>`) must prefix it with `import.meta.env.BASE_URL` or
+it will silently 404 in production while working fine under `npm run dev` (see decisions.md
+2026-09-14 for the bug this already caused once).
 
 Key architectural rules to preserve (see README §8–10 for full detail):
 - **Data-driven levels.** One `LevelScene`, five config entries in `config/levels.js`. Never

@@ -17,8 +17,9 @@ AI-generated video cutscenes (Sora) with procedural/text fallbacks.
 
 ## Status
 
-Tracked here as each milestone/session completes. Session paused here as of 2026-09-13 evening
-— user is picking this back up "tomorrow."
+Tracked here as each milestone/session completes. As of 2026-09-14, Milestone 7 (mobile touch
+controls) is next up and not yet started — the 2026-09-14 session so far has only been cutscene
+asset wiring (see "Also outstanding" below), no code changes.
 
 - [x] Milestone 1 — Scaffold & deploy skeleton
 - [x] Milestone 2 — Core movement + camera
@@ -38,10 +39,13 @@ Tracked here as each milestone/session completes. Session paused here as of 2026
       no full playthrough of Levels 2–5, not deployed anywhere.
 
 **Also outstanding, not tied to a milestone number:**
-- 5 more cutscene videos (level2.mp4 through level5.mp4, ending.mp4 — prompts in
-  `docs/cutscene-prompts.md`) and any remaining background images beyond what's already in
-  `/public/backgrounds/` — user is generating these; wire in whichever land, no code changes
-  needed per the fallback pattern.
+- 2 more cutscene videos (`level5.mp4`, `ending.mp4` — prompts in `docs/cutscene-prompts.md`).
+  `level2.mp4`–`level4.mp4` landed 2026-09-14 as `.mov` exports and were remuxed to `.mp4`
+  (stream copy, already H.264/AAC — no re-encode needed) since `CutsceneManager.js` only ever
+  probes the `.mp4` filename; the `.mov` originals are still sitting in `/public/videos/` as
+  backups. Any remaining background images beyond what's already in `/public/backgrounds/` are
+  also outstanding — user is generating these; wire in whichever land, no code changes needed
+  per the fallback pattern.
 - Stretch goals (README §13): 2nd enemy type/turret, checkpoint respawn, mute button, best-time
   tracking, particle effects — only worth attempting once 7–8 are done.
 
@@ -133,8 +137,10 @@ npm test         # Vitest — pure-logic unit tests only (HealthSystem, InputCon
                  well-playtested; 2-5 need a playthrough pass
   main.js
 /public
-  videos/        intro.mp4, level1.mp4 present. level2-5.mp4 + ending.mp4 still missing (fall
-                 back to instant-skip) — prompts in docs/cutscene-prompts.md
+  videos/        intro.mp4, level1-4.mp4 present. level5.mp4 + ending.mp4 still missing (fall
+                 back to instant-skip) — prompts in docs/cutscene-prompts.md. CutsceneManager
+                 only probes the exact `<slot>.mp4` filename — any other extension (e.g. a
+                 raw .mov export) is silently treated as missing and falls back instantly.
   backgrounds/   level1-5.jpg ALL present (all 5 levels have real AI backgrounds now) —
                  prompts in docs/background-prompts.md, in case any need regenerating
 /tests           HealthSystem.test.js, InputController.test.js — Vitest, pure-logic only

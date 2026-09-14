@@ -27,7 +27,7 @@ export default class LevelScene extends Phaser.Scene {
     // If this file doesn't exist, Phaser's loader simply won't add the texture key to the
     // TextureManager — no crash, no error listener needed. create() below falls back to the
     // procedural sky texture via this.textures.exists() when that's the case.
-    this.load.image(`${config.key}-bg`, `/backgrounds/${config.key}.jpg`);
+    this.load.image(`${config.key}-bg`, `${import.meta.env.BASE_URL}backgrounds/${config.key}.jpg`);
   }
 
   create() {

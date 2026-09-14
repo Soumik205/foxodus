@@ -16,7 +16,7 @@ export default class CutsceneManager {
   }
 
   play(slotKey, onComplete, subtitleLines = null) {
-    const src = `/videos/${slotKey}.mp4`;
+    const src = `${import.meta.env.BASE_URL}videos/${slotKey}.mp4`;
     const probe = document.createElement('video');
     probe.preload = 'metadata';
 
